@@ -2,7 +2,7 @@ const Header = (props) => {
   return <h1>{props.course}</h1>
 }
 
-// ← This line was missing in your file
+
 const Part = (props) => {
   return <p>{props.part.name} {props.part.exercises}</p>
 }
@@ -18,12 +18,12 @@ const Content = (props) => {
 }
 
 const Total = (props) => {
-  return (
-    <p>
-      Number of excercises{' '}
-      {props.parts[0].exercises + props.parts[1].exercises + props.parts[2].exercises}
-    </p>
-  )
+  const total =
+    props.parts[0].exercises +
+    props.parts[1].exercises +
+    props.parts[2].exercises
+
+  return <p>Number of exercises {total}</p>
 }
 
 const App = () => {
