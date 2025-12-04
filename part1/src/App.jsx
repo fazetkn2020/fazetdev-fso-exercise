@@ -42,8 +42,13 @@ const CourseInfo = () => {
   )  
 } 
 
-const StatisticLine = ({ text, value }) => {
-  return <p>{text} {value}</p>
+const StatisticLine = (props) => {
+  return (
+    <tr>
+      <td>{props.text}</td>
+      <td>{props.value}</td>
+    </tr>
+  )
 }
 
 const Statistics = ({ good, neutral, bad }) => {
@@ -57,14 +62,16 @@ const Statistics = ({ good, neutral, bad }) => {
   const positive = (good / all) * 100
 
   return (
-    <div>
-      <StatisticLine text="good" value={good} />
-      <StatisticLine text="neutral" value={neutral} />
-      <StatisticLine text="bad" value={bad} />
-      <StatisticLine text="all" value={all} />
-      <StatisticLine text="average" value={average} />
-      <StatisticLine text="positive" value={positive + " %"} />
-    </div>
+    <table>
+      <tbody>
+        <StatisticLine text="good" value={good} />
+        <StatisticLine text="neutral" value={neutral} />
+        <StatisticLine text="bad" value={bad} />
+        <StatisticLine text="all" value={all} />
+        <StatisticLine text="average" value={average} />
+        <StatisticLine text="positive" value={positive + " %"} />
+      </tbody>
+    </table>
   )
 }
 
@@ -87,7 +94,7 @@ const App = () => {
       <button onClick={addNeutral}>neutral</button>  
       <button onClick={addBad}>bad</button>  
 
-      {/* Replace manual stats display with the Statistics component */}
+      
       <Statistics good={good} neutral={neutral} bad={bad} />
     </div>  
   )  
