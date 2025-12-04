@@ -40,7 +40,11 @@ const CourseInfo = () => {
       <hr />  
     </div>  
   )  
-}  
+} 
+
+const StatisticLine = ({ text, value }) => {
+  return <p>{text} {value}</p>
+}
 
 const Statistics = ({ good, neutral, bad }) => {
   const all = good + neutral + bad
@@ -50,16 +54,16 @@ const Statistics = ({ good, neutral, bad }) => {
   }
 
   const average = (good - bad) / all
-  const positive = good / all * 100   // no .toFixed(1) yet – most students keep it raw
+  const positive = (good / all) * 100
 
   return (
     <div>
-      good {good} <br />
-      neutral {neutral} <br />
-      bad {bad} <br />
-      all {all} <br />
-      average {average} <br />
-      positive {positive} %
+      <StatisticLine text="good" value={good} />
+      <StatisticLine text="neutral" value={neutral} />
+      <StatisticLine text="bad" value={bad} />
+      <StatisticLine text="all" value={all} />
+      <StatisticLine text="average" value={average} />
+      <StatisticLine text="positive" value={positive + " %"} />
     </div>
   )
 }
