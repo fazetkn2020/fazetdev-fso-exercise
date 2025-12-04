@@ -63,6 +63,7 @@ const App = () => {
       <button onClick={addBad}>bad</button>
 
       <h1>statistics</h1>
+      <p>all {good + neutral + bad}</p>
       good {good} <br />
       neutral {neutral} <br />
       bad {bad}
