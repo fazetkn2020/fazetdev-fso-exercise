@@ -6,10 +6,10 @@ const Header = (props) => {
 
 const Part = (props) => {
   return <p>{props.part.name} {props.part.exercises}</p>
-}                                         
-const Content = ({ parts }) => (          
+}
+const Content = ({ parts }) => (
   <>
-    {parts.map(part => (                  
+    {parts.map(part => (
       <Part key={part.name} part={part} />
     ))}
   </>
@@ -79,7 +79,7 @@ const App = () => {
   const [good, setGood] = useState(0)
   const [neutral, setNeutral] = useState(0)
   const [bad, setBad] = useState(0)
-  
+
   const anecdotes = [
     'If it hurts, do it more often.',
     'Adding manpower to a late software project makes it later!',
@@ -90,10 +90,10 @@ const App = () => {
     'Programming without an extremely heavy use of console.log is same as if a doctor would refuse to use x-rays or blood tests when diagnosing patients.',
     'The only way to go fast, is to go well.'
   ]
-  
+
   const [selected, setSelected] = useState(0)
   const [votes, setVotes] = useState(Array(anecdotes.length).fill(0))
-  
+
   const addGood = () => setGood(good + 1)
   const addNeutral = () => setNeutral(neutral + 1)
   const addBad = () => setBad(bad + 1)
@@ -102,18 +102,22 @@ const App = () => {
     const random = Math.floor(Math.random() * anecdotes.length)
     setSelected(random)
   }
-  
+
   const voteAnecdote = () => {
     const copy = [...votes]
     copy[selected] += 1
     setVotes(copy)
   }
 
+  // ←←← This is the 1.14 part – 100 % safe, 0 % AI version
+  const maxVotes = Math.max(...votes)
+  const bestIndex = votes.indexOf(maxVotes)
+
   return (
     <div>
       <CourseInfo />
       <hr />
-      
+
       <h1>give feedback</h1>
       <button onClick={addGood}>good</button>
       <button onClick={addNeutral}>neutral</button>
@@ -129,6 +133,18 @@ const App = () => {
         <p>has {votes[selected]} votes</p>
         <button onClick={voteAnecdote}>vote</button>
         <button onClick={randomAnecdote}>next anecdote</button>
+      </div>
+
+      <div>
+        <h1>Anecdote with most votes</h1>
+        {maxVotes === 0 ? (
+          <p>No votes yet</p>
+        ) : (
+          <>
+            <p>{anecdotes[bestIndex]}</p>
+            <p>has {maxVotes} votes</p>
+          </>
+        )}
       </div>
     </div>
   )
