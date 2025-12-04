@@ -42,21 +42,27 @@ const CourseInfo = () => {
   )  
 }  
 
+const Statistics = ({ good, neutral, bad }) => {
+  const all = good + neutral + bad
 
-const Statistics = ({ good, neutral, bad }) => {  
-  const all = good + neutral + bad  
-  const average = all === 0 ? 0 : (good - bad) / all  
+  if (all === 0) {
+    return <p>No feedback given</p>
+  }
 
-  return (  
-    <div>  
-      good {good} <br />  
-      neutral {neutral} <br />  
-      bad {bad} <br />  
-      all {all} <br />  
-      average {average}  
-    </div>  
-  )  
-}  
+  const average = (good - bad) / all
+  const positive = good / all * 100   // no .toFixed(1) yet – most students keep it raw
+
+  return (
+    <div>
+      good {good} <br />
+      neutral {neutral} <br />
+      bad {bad} <br />
+      all {all} <br />
+      average {average} <br />
+      positive {positive} %
+    </div>
+  )
+}
 
 const App = () => {  
   const [good, setGood] = useState(0)  
