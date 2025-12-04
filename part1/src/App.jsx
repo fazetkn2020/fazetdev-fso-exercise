@@ -1,46 +1,46 @@
-import { useState } from 'react'  
+import { useState } from 'react'
 
-const Header = (props) => {  
-  return <h1>{props.course}</h1>  
-}  
+const Header = (props) => {
+  return <h1>{props.course}</h1>
+}
 
-const Part = (props) => {  
-  return <p>{props.part.name} {props.part.exercises}</p>  
-}                                           
-const Content = ({ parts }) => (            
-  <>  
-    {parts.map(part => (                        
-      <Part key={part.name} part={part} />  
-    ))}  
-  </>  
-)  
+const Part = (props) => {
+  return <p>{props.part.name} {props.part.exercises}</p>
+}                                         
+const Content = ({ parts }) => (          
+  <>
+    {parts.map(part => (                  
+      <Part key={part.name} part={part} />
+    ))}
+  </>
+)
 
-const Total = (props) => {  
-  const total =  
-    props.parts[0].exercises +  
-    props.parts[1].exercises +  
-    props.parts[2].exercises  
+const Total = (props) => {
+  const total =
+    props.parts[0].exercises +
+    props.parts[1].exercises +
+    props.parts[2].exercises
 
-  return <p>Number of exercises {total}</p>  
-}  
+  return <p>Number of exercises {total}</p>
+}
 
-const CourseInfo = () => {  
-  const course = 'Half Stack application development'  
-  const parts = [  
-    { name: 'Fundamentals of React', exercises: 10 },  
-    { name: 'Using props to pass data', exercises: 7 },  
-    { name: 'State of a component', exercises: 14 }  
-  ]  
+const CourseInfo = () => {
+  const course = 'Half Stack application development'
+  const parts = [
+    { name: 'Fundamentals of React', exercises: 10 },
+    { name: 'Using props to pass data', exercises: 7 },
+    { name: 'State of a component', exercises: 14 }
+  ]
 
-  return (  
-    <div>  
-      <Header course={course} />  
-      <Content parts={parts} />  
-      <Total parts={parts} />  
-      <hr />  
-    </div>  
-  )  
-} 
+  return (
+    <div>
+      <Header course={course} />
+      <Content parts={parts} />
+      <Total parts={parts} />
+      <hr />
+    </div>
+  )
+}
 
 const StatisticLine = (props) => {
   return (
@@ -76,15 +76,9 @@ const Statistics = ({ good, neutral, bad }) => {
 }
 
 const App = () => {
-  
   const [good, setGood] = useState(0)
   const [neutral, setNeutral] = useState(0)
   const [bad, setBad] = useState(0)
-
-  const addGood = () => setGood(good + 1)
-  const addNeutral = () => setNeutral(neutral + 1)
-  const addBad = () => setBad(bad + 1)
-
   
   const anecdotes = [
     'If it hurts, do it more often.',
@@ -96,21 +90,30 @@ const App = () => {
     'Programming without an extremely heavy use of console.log is same as if a doctor would refuse to use x-rays or blood tests when diagnosing patients.',
     'The only way to go fast, is to go well.'
   ]
-
+  
   const [selected, setSelected] = useState(0)
+  const [votes, setVotes] = useState(Array(anecdotes.length).fill(0))
+  
+  const addGood = () => setGood(good + 1)
+  const addNeutral = () => setNeutral(neutral + 1)
+  const addBad = () => setBad(bad + 1)
 
   const randomAnecdote = () => {
     const random = Math.floor(Math.random() * anecdotes.length)
     setSelected(random)
   }
+  
+  const voteAnecdote = () => {
+    const copy = [...votes]
+    copy[selected] += 1
+    setVotes(copy)
+  }
 
   return (
     <div>
-      {/* 1.1–1.5 */}
       <CourseInfo />
       <hr />
-
-      {/* 1.6–1.11 Unicafe */}
+      
       <h1>give feedback</h1>
       <button onClick={addGood}>good</button>
       <button onClick={addNeutral}>neutral</button>
@@ -120,10 +123,13 @@ const App = () => {
       <Statistics good={good} neutral={neutral} bad={bad} />
       <hr />
 
-      {/* 1.12 Anecdotes */}
-      <h1>Anecdote of the day</h1>
-      <p>{anecdotes[selected]}</p>
-      <button onClick={randomAnecdote}>next anecdote</button>
+      <div>
+        <h1>Anecdote of the day</h1>
+        <p>{anecdotes[selected]}</p>
+        <p>has {votes[selected]} votes</p>
+        <button onClick={voteAnecdote}>vote</button>
+        <button onClick={randomAnecdote}>next anecdote</button>
+      </div>
     </div>
   )
 }
