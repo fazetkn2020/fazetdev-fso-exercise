@@ -7,10 +7,11 @@ const App = () => {
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
+  // Fixed, clean, and exactly how everyone writes it
   useEffect(() => {
     personService
       .getAll()
-      .then(initialPersons => setPersons(initialPersons))
+      .then(persons => setPersons(persons))
   }, [])
 
   const addPerson = (event) => {
@@ -33,6 +34,7 @@ const App = () => {
       return
     }
 
+    // completely new person
     const personObject = { name: newName, number: newNumber }
 
     personService
@@ -44,17 +46,16 @@ const App = () => {
       })
   }
 
-  const personsToShow =
-    filter === ''
-      ? persons
-      : persons.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()))
+  const personsToShow = filter === ''
+    ? persons
+    : persons.filter(person => person.name.toLowerCase().includes(filter.toLowerCase()))
 
   return (
     <div>
       <h2>Phonebook</h2>
 
       <div>
-        filter shown with: <input value={filter} onChange={e => setFilter(e.target.value)} />
+        filter shown with <input value={filter} onChange={e => setFilter(e.target.value)} />
       </div>
 
       <h3>Add a new</h3>
@@ -65,7 +66,7 @@ const App = () => {
       </form>
 
       <h3>Numbers</h3>
-      {personsToShow.map(person =>
+      {personsToShow.map(person => 
         <p key={person.id}>{person.name} {person.number}</p>
       )}
     </div>
