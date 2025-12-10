@@ -2,6 +2,7 @@
   "name": "phonebook-backend",
   "version": "1.0.0",
   "description": "Simple Node/Express backend for phonebook",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -10,6 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "morgan": "^1.10.1"
   }
