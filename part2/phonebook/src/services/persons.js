@@ -1,20 +1,23 @@
 import axios from 'axios'
 
-const baseUrl = 'http://localhost:3001/persons'   // still the dummy server
+// backend now uses /api/persons in part 3
+const baseUrl = 'http://localhost:3001/api/persons'
 
 const getAll = () => {
-  const request = axios.get(baseUrl)
-  return request.then(response => response.data)
+  return axios.get(baseUrl).then(res => res.data)
 }
 
-const create = newObject => {
-  const request = axios.post(baseUrl, newObject)
-  return request.then(response => response.data)
+const create = (newObject) => {
+  return axios.post(baseUrl, newObject).then(res => res.data)
 }
 
 const update = (id, newObject) => {
-  const request = axios.put(`${baseUrl}/${id}`, newObject)
-  return request.then(response => response.data)
+  return axios.put(`${baseUrl}/${id}`, newObject).then(res => res.data)
 }
 
-export default { getAll, create, update }
+// delete person
+const remove = (id) => {
+  return axios.delete(`${baseUrl}/${id}`)
+}
+
+export default { getAll, create, update, remove }

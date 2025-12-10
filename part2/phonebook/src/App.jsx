@@ -7,8 +7,8 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
-  const [message, setMessage] = useState(null)        // ← success message
-  const [errorMessage, setErrorMessage] = useState(null) // ← error message
+  const [message, setMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
 
   useEffect(() => {
     personService
@@ -16,60 +16,51 @@ const App = () => {
       .then(initialPersons => setPersons(initialPersons))
   }, [])
 
+  // --- addPerson rewritten for 3.9 student style ---
   const addPerson = (event) => {
     event.preventDefault()
-    const existingPerson = persons.find(p => p.name === newName)
 
-    if (existingPerson) {
-      if (!window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
-        return
-      }
-
-      const updatedPerson = { ...existingPerson, number: newNumber }
-
-      personService
-        .update(existingPerson.id, updatedPerson)
-        .then(returnedPerson => {
-          setPersons(persons.map(p => p.id !== existingPerson.id ? p : returnedPerson))
-          setMessage(`Updated ${newName}'s number`)
-          setTimeout(() => setMessage(null), 5000)
-          setNewName('')
-          setNewNumber('')
-        })
-        .catch(error => {
-          // This covers 404 (person already deleted) and validation errors
-          setErrorMessage(
-            error.response?.data?.error ||
-            `Information of ${newName} has already been removed from server`
-          )
-          setTimeout(() => setErrorMessage(null), 5000)
-          setPersons(persons.filter(p => p.id !== existingPerson.id))
-        })
-
+    // simple duplicate check
+    if (persons.some(p => p.name === newName)) {
+      alert(`${newName} is already added to phonebook`)
       return
     }
 
-    // completely new person
-    const personObject = { name: newName, number: newNumber }
+    const personObject = {
+      name: newName,
+      number: newNumber
+    }
 
     personService
       .create(personObject)
-      .then(returnedPerson => {
-        setPersons(persons.concat(returnedPerson))
-        setMessage(`Added ${newName}`)
-        setTimeout(() => setMessage(null), 5000)
+      .then(newPerson => {
+        setPersons(persons.concat(newPerson))
         setNewName('')
         setNewNumber('')
       })
       .catch(error => {
-        setErrorMessage(error.response?.data?.error || 'Something went wrong')
-        setTimeout(() => setErrorMessage(null), 5000)
+        console.log(error)
       })
   }
 
-  const personsToShow = filter === ''
-    ? persons
-    : persons.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()))
+  // --- delete handler added for 3.9 ---
+  const handleDelete = (id) => {
+    const person = persons.find(p => p.id === id)
+    if (window.confirm(`Delete ${person?.name}?`)) {
+      personService
+        .remove(id)
+        .then(() => {
+          setPersons(persons.filter(p => p.id !== id))
+        })
+    }
+  }
+
+  const personsToShow =
+    filter === ''
+      ? persons
+      : persons.filter(p =>
+          p.name.toLowerCase().includes(filter.toLowerCase())
+        )
 
   return (
     <div>
@@ -79,22 +70,35 @@ const App = () => {
       <Notification message={errorMessage} type="error" />
 
       <div>
-        filter shown with <input value={filter} onChange={e => setFilter(e.target.value)} />
+        filter shown with{' '}
+        <input value={filter} onChange={e => setFilter(e.target.value)} />
       </div>
 
       <h3>add a new</h3>
       <form onSubmit={addPerson}>
-        <div>name: <input value={newName} onChange={e => setNewName(e.target.value)} /></div>
-        <div>number: <input value={newNumber} onChange={e => setNewNumber(e.target.value)} /></div>
-        <div><button type="submit">add</button></div>
+        <div>
+          name:{' '}
+          <input value={newName} onChange={e => setNewName(e.target.value)} />
+        </div>
+        <div>
+          number:{' '}
+          <input
+            value={newNumber}
+            onChange={e => setNewNumber(e.target.value)}
+          />
+        </div>
+        <div>
+          <button type="submit">add</button>
+        </div>
       </form>
 
       <h3>Numbers</h3>
-      {personsToShow.map(person =>
+      {personsToShow.map(person => (
         <p key={person.id}>
-          {person.name} {person.number}
+          {person.name} {person.number}{' '}
+          <button onClick={() => handleDelete(person.id)}>delete</button>
         </p>
-      )}
+      ))}
     </div>
   )
 }
