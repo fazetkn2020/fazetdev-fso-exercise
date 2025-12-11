@@ -1,86 +1,45 @@
 import express from 'express'
 import morgan from 'morgan'
 import cors from 'cors'
+import Person from './models/person.js'
 
 const app = express()
 app.use(cors())
 app.use(express.json())
-app.use(morgan('tiny')) 
+app.use(morgan('tiny'))
 
-let persons = [
-  { 
-    id: 1, 
-    name: 'Arto Hellas', 
-    number: '040-123456' 
-  },
-  { 
-    id: 2, 
-    name: 'Ada Lovelace', 
-    number: '39-44-5323523' 
-  },
-  { 
-    id: 3, 
-    name: 'Dan Abramov', 
-    number: '12-43-234345' 
-  },
-  { 
-    id: 4, 
-    name: 'Mary Poppendieck', 
-    number: '39-23-6423122' 
-  }
-]
-
-
+// GET all persons
 app.get('/api/persons', (req, res) => {
-  res.json(persons)
+  Person.find({}).then(people => res.json(people))
 })
 
-
+// GET one person
 app.get('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id)
-  const person = persons.find(person => person.id === id)  // renamed p → person (very common)
-
-  if (person) {
-    res.json(person)
-  } else {
-    res.status(404).end()
-  }
-})
-
-
-app.post('/api/persons', (req, res) => {
-  const body = req.body
-
-  if (!body.name || !body.number) {
-    return res.status(400).json({ 
-      error: 'name or number missing' 
+  Person.findById(req.params.id)
+    .then(person => {
+      if (person) res.json(person)
+      else res.status(404).end()
     })
-  }
-
-  
-  const nameAlreadyExists = persons.some(p => p.name === body.name)
-  if (nameAlreadyExists) {
-    return res.status(400).json({ error: 'name must be unique' })
-  }
-
-  const person = {
-    name: body.name,
-    number: body.number,
-    id: Math.floor(Math.random() * 999999)   // slightly messier number
-  }
-
-  persons = persons.concat(person)
-  res.json(person)
+    .catch(() => res.status(400).send({ error: 'malformatted id' }))
 })
 
+// POST new person
+app.post('/api/persons', (req, res) => {
+  const { name, number } = req.body
+  if (!name || !number) return res.status(400).json({ error: 'name or number missing' })
 
+  const person = new Person({ name, number })
+  person.save()
+    .then(saved => res.json(saved))
+    .catch(err => res.status(400).json({ error: err.message }))
+})
+
+// DELETE person
 app.delete('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id)
-  persons = persons.filter(person => person.id !== id)
-  res.status(204).end()
+  Person.findByIdAndRemove(req.params.id)
+    .then(() => res.status(204).end())
+    .catch(() => res.status(400).send({ error: 'malformatted id' }))
 })
 
 const PORT = process.env.PORT || 3001
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
