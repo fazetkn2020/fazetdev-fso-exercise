@@ -8,12 +8,11 @@ app.use(cors())
 app.use(express.json())
 app.use(morgan('tiny'))
 
-// GET all persons
+
 app.get('/api/persons', (req, res) => {
   Person.find({}).then(people => res.json(people))
 })
 
-// GET one person
 app.get('/api/persons/:id', (req, res) => {
   Person.findById(req.params.id)
     .then(person => {
@@ -23,7 +22,7 @@ app.get('/api/persons/:id', (req, res) => {
     .catch(() => res.status(400).send({ error: 'malformatted id' }))
 })
 
-// POST new person
+
 app.post('/api/persons', (req, res) => {
   const { name, number } = req.body
   if (!name || !number) return res.status(400).json({ error: 'name or number missing' })
@@ -34,7 +33,7 @@ app.post('/api/persons', (req, res) => {
     .catch(err => res.status(400).json({ error: err.message }))
 })
 
-// DELETE person
+
 app.delete('/api/persons/:id', (req, res) => {
   Person.findByIdAndRemove(req.params.id)
     .then(() => res.status(204).end())
