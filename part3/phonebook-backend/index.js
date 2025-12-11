@@ -13,6 +13,7 @@ app.get('/api/persons', (req, res) => {
   Person.find({}).then(people => res.json(people))
 })
 
+
 app.get('/api/persons/:id', (req, res) => {
   Person.findById(req.params.id)
     .then(person => {
@@ -21,7 +22,6 @@ app.get('/api/persons/:id', (req, res) => {
     })
     .catch(() => res.status(400).send({ error: 'malformatted id' }))
 })
-
 
 app.post('/api/persons', (req, res) => {
   const { name, number } = req.body
@@ -36,7 +36,14 @@ app.post('/api/persons', (req, res) => {
 
 app.delete('/api/persons/:id', (req, res) => {
   Person.findByIdAndRemove(req.params.id)
-    .then(() => res.status(204).end())
+    .then(deletedPerson => {
+      if (deletedPerson) {
+        console.log(`Deleted ${deletedPerson.name} with ID ${deletedPerson._id}`)
+        res.status(204).end()
+      } else {
+        res.status(404).json({ error: 'person not found' })
+      }
+    })
     .catch(() => res.status(400).send({ error: 'malformatted id' }))
 })
 
