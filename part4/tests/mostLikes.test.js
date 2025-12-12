@@ -1,26 +1,37 @@
-const { test, describe } = require('node:test')
+const { describe, test } = require('node:test')
 const assert = require('node:assert')
 const listHelper = require('../utils/list_helper')
 
 describe('most likes', () => {
-  const blogs = [
-    { title: 'Blog1', author: 'Alice', likes: 5 },
-    { title: 'Blog2', author: 'Bob', likes: 10 },
-    { title: 'Blog3', author: 'Alice', likes: 7 },
-    { title: 'Blog4', author: 'Bob', likes: 3 }
+  const listWithOneBlog = [
+    {
+      _id: '1',
+      title: 'Single Blog',
+      author: 'Alice',
+      url: 'http://example.com',
+      likes: 5,
+      __v: 0
+    }
+  ]
+
+  const listWithMultipleBlogs = [
+    { _id: '1', title: 'Blog A', author: 'Alice', likes: 5 },
+    { _id: '2', title: 'Blog B', author: 'Bob', likes: 13 },
+    { _id: '3', title: 'Blog C', author: 'Alice', likes: 7 },
   ]
 
   test('of empty list is null', () => {
-    assert.strictEqual(listHelper.mostLikes([]), null)
+    const result = listHelper.mostLikes([])
+    assert.strictEqual(result, null)
   })
 
   test('when list has only one blog, equals that author and likes', () => {
-    const single = [{ title: 'Only', author: 'Carol', likes: 8 }]
-    assert.deepStrictEqual(listHelper.mostLikes(single), { author: 'Carol', likes: 8 })
+    const result = listHelper.mostLikes(listWithOneBlog)
+    assert.deepStrictEqual(result, { author: 'Alice', likes: 5 })
   })
 
   test('of a bigger list returns the author with most likes', () => {
-    const result = listHelper.mostLikes(blogs)
-    assert.deepStrictEqual(result, { author: 'Bob', likes: 13 }) // fixed
+    const result = listHelper.mostLikes(listWithMultipleBlogs)
+    assert.deepStrictEqual(result, { author: 'Bob', likes: 13 })
   })
 })
