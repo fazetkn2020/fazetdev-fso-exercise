@@ -15,26 +15,22 @@ const favoriteBlog = (blogs) => {
 
 const mostBlogs = (blogs) => {
   if (blogs.length === 0) return null
-
   const count = {}
   blogs.forEach(blog => {
     count[blog.author] = (count[blog.author] || 0) + 1
   })
-
-  const maxAuthor = Object.keys(count).reduce((a, b) => (count[a] > count[b] ? a : b))
+  const maxAuthor = Object.keys(count).reduce((a, b) => count[a] > count[b] ? a : b)
   return { author: maxAuthor, blogs: count[maxAuthor] }
 }
 
 const mostLikes = (blogs) => {
   if (blogs.length === 0) return null
-
-  const likes = {}
+  const likesCount = {}
   blogs.forEach(blog => {
-    likes[blog.author] = (likes[blog.author] || 0) + blog.likes
+    likesCount[blog.author] = (likesCount[blog.author] || 0) + blog.likes
   })
-
-  const maxAuthor = Object.keys(likes).reduce((a, b) => (likes[a] > likes[b] ? a : b))
-  return { author: maxAuthor, likes: likes[maxAuthor] }
+  const maxAuthor = Object.keys(likesCount).reduce((a, b) => likesCount[a] > likesCount[b] ? a : b)
+  return { author: maxAuthor, likes: likesCount[maxAuthor] }
 }
 
 module.exports = {

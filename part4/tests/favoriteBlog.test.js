@@ -3,46 +3,24 @@ const assert = require('node:assert')
 const listHelper = require('../utils/list_helper')
 
 describe('favorite blog', () => {
-  const listWithOneBlog = [
-    {
-      _id: '1',
-      title: 'Go To Statement Considered Harmful',
-      author: 'Edsger W. Dijkstra',
-      url: 'https://example.com/dijkstra',
-      likes: 5,
-      __v: 0
-    }
-  ]
-
-  const listWithManyBlogs = [
-    ...listWithOneBlog,
-    {
-      _id: '2',
-      title: 'Canonical string reduction',
-      author: 'Edsger W. Dijkstra',
-      url: 'https://example.com/canonical',
-      likes: 12,
-      __v: 0
-    },
-    {
-      _id: '3',
-      title: 'First class tests',
-      author: 'Robert C. Martin',
-      url: 'https://example.com/tests',
-      likes: 10,
-      __v: 0
-    }
-  ]
-
   test('of empty list is null', () => {
-    assert.strictEqual(listHelper.favoriteBlog([]), null)
+    const result = listHelper.favoriteBlog([])
+    assert.strictEqual(result, null)
   })
 
   test('when list has only one blog, equals that blog', () => {
-    assert.deepStrictEqual(listHelper.favoriteBlog(listWithOneBlog), listWithOneBlog[0])
+    const blog = { title: 'Test Blog', author: 'Alice', likes: 5 }
+    const result = listHelper.favoriteBlog([blog])
+    assert.deepStrictEqual(result, blog)
   })
 
   test('of a bigger list is calculated right', () => {
-    assert.deepStrictEqual(listHelper.favoriteBlog(listWithManyBlogs), listWithManyBlogs[1])
+    const blogs = [
+      { title: 'Blog 1', author: 'Alice', likes: 5 },
+      { title: 'Blog 2', author: 'Bob', likes: 12 },
+      { title: 'Blog 3', author: 'Alice', likes: 7 }
+    ]
+    const result = listHelper.favoriteBlog(blogs)
+    assert.deepStrictEqual(result, { title: 'Blog 2', author: 'Bob', likes: 12 })
   })
 })
