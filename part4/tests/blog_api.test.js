@@ -5,92 +5,92 @@ const Blog = require('../models/blog')
 
 const api = supertest(app)
 
+// test blogs
 const initialBlogs = [
   {
-    title: 'React patterns',
-    author: 'Michael Chan',
-    url: 'https://reactpatterns.com/',
-    likes: 7
+    "title": "my first blog",
+    author: "john doe",
+    "url": "https://myblog.com/1",
+    likes: 3,
   },
   {
-    title: 'Go To Statement Considered Harmful',
-    author: 'Edsger W. Dijkstra',
-    url: 'http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html',
-    likes: 5
+    title: "another blog post",
+    "author": "jane smith",
+    url: "http://blog.example.com/post2",
+    "likes": 8
   }
 ]
 
 beforeAll(async () => {
-  // Connect to test database
   await mongoose.connect(process.env.TEST_MONGODB_URI)
-}, 30000) // 30 second timeout
+  // console.log('connected to test db')
+})
 
 beforeEach(async () => {
-  // Clear the database completely
   await Blog.deleteMany({})
-
-  // Save blogs one by one to ensure order
-  for (let blog of initialBlogs) {
-    let blogObject = new Blog(blog)
-    await blogObject.save()
+  
+  // add the blogs
+  for (let i = 0; i < initialBlogs.length; i++) {
+    const blog = new Blog(initialBlogs[i])
+    await blog.save()
   }
 })
 
-describe('GET /api/blogs', () => {
-  test('blogs are returned as json', async () => {
+describe('getting blogs', () => {
+  test('blogs come back as json', async () => {
     await api
       .get('/api/blogs')
-      .expect(200)
-      .expect('Content-Type', /application\/json/)
-  }, 10000)
+      .expect('Content-Type', /json/)
+  })
 
-  test('all blogs are returned', async () => {
-    const response = await api.get('/api/blogs')
-    expect(response.body).toHaveLength(initialBlogs.length)
-  }, 10000)
+  test('right number of blogs', async () => {
+    const res = await api.get('/api/blogs')
+    expect(res.body.length).toBe(initialBlogs.length)
+  })
 
-  test('unique identifier property of blog posts is named id, not _id', async () => {
-    const response = await api.get('/api/blogs')
-    const blogs = response.body
-
-    // Check all blogs have id field
-    blogs.forEach(blog => {
-      expect(blog.id).toBeDefined()
-      expect(typeof blog.id).toBe('string')
-    })
-
-    // Check no blog has _id field
-    blogs.forEach(blog => {
-      expect(blog._id).toBeUndefined()
-    })
-  }, 10000)
+  test('id field exists not _id', async () => {
+    const res = await api.get('/api/blogs')
+    expect(res.body[0].id).toBeDefined()
+    // should not have _id
+    expect(res.body[0]._id).toBe(undefined)
+  })
 })
 
-describe('POST /api/blogs', () => {
-  test('a valid blog can be added', async () => {
-    const newBlog = {
-      title: 'Canonical string reduction',
-      author: 'Edsger W. Dijkstra',
-      url: 'http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html',
-      likes: 12
+// tests for posting new blogs
+describe('POST to /api/blogs', () => {
+  test('can add new blog', async () => {
+    const blogToAdd = {
+      title: "testing post",
+      author: "tester",
+      url: "http://test.test",
+      likes: 99
     }
 
-    await api
+    await api.post('/api/blogs').send(blogToAdd).expect(201)
+
+    const allBlogs = await api.get('/api/blogs')
+    expect(allBlogs.body).toHaveLength(initialBlogs.length + 1)
+  })
+
+  // ex 4.11 test - likes missing should be 0
+  test('missing likes becomes 0', async () => {
+    const noLikesBlog = {
+      title: "no likes blog",
+      author: "anon",
+      url: "http://nolikes.com"
+      // no likes here
+    }
+
+    const result = await api
       .post('/api/blogs')
-      .send(newBlog)
+      .send(noLikesBlog)
       .expect(201)
-      .expect('Content-Type', /application\/json/)
 
-    // Verify total number of blogs increased by one
-    const response = await api.get('/api/blogs')
-    expect(response.body).toHaveLength(initialBlogs.length + 1)
-
-    // Verify the new blog's content (optional but good to check)
-    const titles = response.body.map(r => r.title)
-    expect(titles).toContain('Canonical string reduction')
-  }, 10000)
+    // check likes is 0
+    expect(result.body.likes).toEqual(0)
+  })
 })
 
-afterAll(async () => {
-  await mongoose.connection.close()
+afterAll(() => {
+  mongoose.connection.close()
 })

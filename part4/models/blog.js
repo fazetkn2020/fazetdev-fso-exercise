@@ -4,7 +4,10 @@ const blogSchema = mongoose.Schema({
   title: String,
   author: String,
   url: String,
-  likes: Number,
+  likes: {
+    type: Number,
+    default: 0
+  }
 })
 
 // Transform MongoDB's _id to id and remove __v
