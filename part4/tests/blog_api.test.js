@@ -89,6 +89,33 @@ describe('POST to /api/blogs', () => {
     // check likes is 0
     expect(result.body.likes).toEqual(0)
   })
+
+  // ex 4.12 tests
+  test('missing title returns 400', async () => {
+    const noTitleBlog = {
+      author: "someone",
+      url: "http://example.com",
+      likes: 5
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(noTitleBlog)
+      .expect(400)
+  })
+
+  test('missing url returns 400', async () => {
+    const noUrlBlog = {
+      title: "blog with no url",
+      author: "writer",
+      likes: 2
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(noUrlBlog)
+      .expect(400)
+  })
 })
 
 afterAll(() => {
