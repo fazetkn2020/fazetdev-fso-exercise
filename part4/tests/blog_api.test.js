@@ -28,7 +28,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   // Clear the database completely
   await Blog.deleteMany({})
-  
+
   // Save blogs one by one to ensure order
   for (let blog of initialBlogs) {
     let blogObject = new Blog(blog)
@@ -49,10 +49,20 @@ describe('GET /api/blogs', () => {
     expect(response.body).toHaveLength(initialBlogs.length)
   }, 10000)
 
-  test('blogs have id field instead of _id', async () => {
+  test('unique identifier property of blog posts is named id, not _id', async () => {
     const response = await api.get('/api/blogs')
-    // Check that id field exists (Mongoose should convert _id to id)
-    expect(response.body[0].id).toBeDefined()
+    const blogs = response.body
+    
+    // Check all blogs have id field
+    blogs.forEach(blog => {
+      expect(blog.id).toBeDefined()
+      expect(typeof blog.id).toBe('string')
+    })
+    
+    // Check no blog has _id field
+    blogs.forEach(blog => {
+      expect(blog._id).toBeUndefined()
+    })
   }, 10000)
 })
 
