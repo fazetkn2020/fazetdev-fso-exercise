@@ -52,17 +52,42 @@ describe('GET /api/blogs', () => {
   test('unique identifier property of blog posts is named id, not _id', async () => {
     const response = await api.get('/api/blogs')
     const blogs = response.body
-    
+
     // Check all blogs have id field
     blogs.forEach(blog => {
       expect(blog.id).toBeDefined()
       expect(typeof blog.id).toBe('string')
     })
-    
+
     // Check no blog has _id field
     blogs.forEach(blog => {
       expect(blog._id).toBeUndefined()
     })
+  }, 10000)
+})
+
+describe('POST /api/blogs', () => {
+  test('a valid blog can be added', async () => {
+    const newBlog = {
+      title: 'Canonical string reduction',
+      author: 'Edsger W. Dijkstra',
+      url: 'http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html',
+      likes: 12
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    // Verify total number of blogs increased by one
+    const response = await api.get('/api/blogs')
+    expect(response.body).toHaveLength(initialBlogs.length + 1)
+
+    // Verify the new blog's content (optional but good to check)
+    const titles = response.body.map(r => r.title)
+    expect(titles).toContain('Canonical string reduction')
   }, 10000)
 })
 
