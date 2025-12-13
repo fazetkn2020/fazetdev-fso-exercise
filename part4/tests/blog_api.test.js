@@ -6,77 +6,78 @@ const User = require('../models/user')
 
 const api = supertest(app)
 
-// test data
 const initialBlogs = [
   {
-    "title": "blog one", 
+    title: "blog one",
     author: "author one",
-    "url": "http://blog1.com",
+    url: "http://blog1.com",
     likes: 5,
   },
   {
     title: "second blog",
-    "author": "another author",
+    author: "another author",
     url: "http://blog2.net",
-    "likes": 10
+    likes: 10
   }
 ]
 
+let authToken
+
 beforeAll(async () => {
   await mongoose.connect(process.env.TEST_MONGODB_URI)
-}, 30000) 
+}, 30000)
 
 beforeEach(async () => {
-  // Clear both collections for a clean setup
   await Blog.deleteMany({})
   await User.deleteMany({})
   
-  // Create a user first, as blogs now require a user ID
-  const testUser = new User({
+  // create test user
+  const userData = {
     username: "testuser",
-    name: "Test User", 
-    passwordHash: "fakepasswordhash123"
+    name: "Test User",
+    password: "testpass"
+  }
+  
+  await api.post('/api/users').send(userData)
+  
+  // login to get token
+  const loginRes = await api.post('/api/login').send({
+    username: "testuser",
+    password: "testpass"
   })
-  const savedUser = await testUser.save()
   
-  // Seeding blogs: using the concurrent method for speed, but keeping the syntax verbose.
-  const blogsToSave = initialBlogs.map(blogData => {
-    return new Blog({
-      ...blogData,
-      user: savedUser._id
-    })
-  })
+  authToken = `Bearer ${loginRes.body.token}`
   
-  await Promise.all(blogsToSave.map(b => b.save())) 
-  
-  // Update user with blog references after saving the blogs
-  const allBlogs = await Blog.find({})
-  savedUser.blogs = allBlogs.map(b => b._id)
-  await savedUser.save()
-}, 15000)
+  // create blogs one by one (slower but more reliable)
+  for (let blog of initialBlogs) {
+    await api.post('/api/blogs')
+      .set('Authorization', authToken)
+      .send(blog)
+  }
+}, 30000) // increased timeout
 
-describe('Blog Data Retrieval (GET)', () => {
-  test('returns json data', async () => {
+describe('GET /api/blogs', () => {
+  test('returns json', async () => {
     await api
       .get('/api/blogs')
       .expect(200)
       .expect('Content-Type', /json/)
-  }, 10000)
+  }, 15000)
 
-  test('correct number of blogs are returned', async () => {
+  test('returns correct number', async () => {
     const res = await api.get('/api/blogs')
-    expect(res.body.length).toBe(initialBlogs.length)
-  }, 10000)
+    expect(res.body).toHaveLength(initialBlogs.length)
+  }, 15000)
 
-  test('id field is present and correct', async () => {
+  test('has id field', async () => {
     const res = await api.get('/api/blogs')
     expect(res.body[0].id).toBeDefined()
     expect(res.body[0]._id).toBeUndefined()
-  }, 10000)
+  }, 15000)
 })
 
-describe('Blog Creation (POST)', () => {
-  test('a valid new blog can be added', async () => {
+describe('POST /api/blogs', () => {
+  test('can add blog with token', async () => {
     const newBlog = {
       title: "new test blog",
       author: "test author",
@@ -86,12 +87,13 @@ describe('Blog Creation (POST)', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', authToken)
       .send(newBlog)
       .expect(201)
 
     const all = await api.get('/api/blogs')
     expect(all.body.length).toBe(initialBlogs.length + 1)
-  }, 10000)
+  }, 15000)
 
   test('missing likes defaults to 0', async () => {
     const blogNoLikes = {
@@ -102,47 +104,71 @@ describe('Blog Creation (POST)', () => {
 
     const res = await api
       .post('/api/blogs')
+      .set('Authorization', authToken)
       .send(blogNoLikes)
       .expect(201)
 
     expect(res.body.likes).toBe(0)
-  }, 10000)
+  }, 15000)
 
-  test('missing title gives 400', async () => {
+  test('no title gives 400', async () => {
     const bad = {
       author: "someone",
       url: "http://example.com",
       likes: 1
     }
 
-    await api.post('/api/blogs').send(bad).expect(400)
-  }, 10000)
+    await api.post('/api/blogs')
+      .set('Authorization', authToken)
+      .send(bad)
+      .expect(400)
+  }, 15000)
 
-  test('missing url gives 400', async () => {
+  test('no url gives 400', async () => {
     const bad = {
       title: "no url blog",
       author: "writer",
       likes: 2
     }
 
-    await api.post('/api/blogs').send(bad).expect(400)
-  }, 10000)
+    await api.post('/api/blogs')
+      .set('Authorization', authToken)
+      .send(bad)
+      .expect(400)
+  }, 15000)
+
+  // ex4.23 test
+  test('fails with 401 if no token', async () => {
+    const newBlog = {
+      title: "should fail",
+      author: "anon",
+      url: "http://fail.com",
+      likes: 5
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
+  }, 15000)
 })
 
-describe('Blog Deletion (DELETE)', () => {
-  test('successful deletion returns 204', async () => {
+describe('DELETE /api/blogs/:id', () => {
+  test('delete works with token', async () => {
     const blogs = await api.get('/api/blogs')
     const toDelete = blogs.body[0]
 
-    await api.delete(`/api/blogs/${toDelete.id}`).expect(204)
+    await api.delete(`/api/blogs/${toDelete.id}`)
+      .set('Authorization', authToken)
+      .expect(204)
 
     const after = await api.get('/api/blogs')
     expect(after.body.length).toBe(initialBlogs.length - 1)
-  }, 10000)
+  }, 15000)
 })
 
-describe('Blog Update (PUT)', () => {
-  test('updating likes works', async () => {
+describe('PUT /api/blogs/:id', () => {
+  test('update likes works', async () => {
     const blogs = await api.get('/api/blogs')
     const toUpdate = blogs.body[0]
 
@@ -152,7 +178,7 @@ describe('Blog Update (PUT)', () => {
       .expect(200)
 
     expect(result.body.likes).toBe(999)
-  }, 10000)
+  }, 15000)
 })
 
 afterAll(async () => {
