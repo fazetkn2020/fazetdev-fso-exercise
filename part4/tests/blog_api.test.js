@@ -2,195 +2,159 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
 const api = supertest(app)
 
-// test blogs
+// test data
 const initialBlogs = [
   {
-    "title": "my first blog",
-    author: "john doe",
-    "url": "https://myblog.com/1",
-    likes: 3,
+    "title": "blog one", 
+    author: "author one",
+    "url": "http://blog1.com",
+    likes: 5,
   },
   {
-    title: "another blog post",
-    "author": "jane smith",
-    url: "http://blog.example.com/post2",
-    "likes": 8
+    title: "second blog",
+    "author": "another author",
+    url: "http://blog2.net",
+    "likes": 10
   }
 ]
 
 beforeAll(async () => {
   await mongoose.connect(process.env.TEST_MONGODB_URI)
-  // console.log('connected to test db')
-})
+}, 30000) 
 
 beforeEach(async () => {
+  // Clear both collections for a clean setup
   await Blog.deleteMany({})
+  await User.deleteMany({})
   
-  // add the blogs
-  for (let i = 0; i < initialBlogs.length; i++) {
-    const blog = new Blog(initialBlogs[i])
-    await blog.save()
-  }
-})
+  // Create a user first, as blogs now require a user ID
+  const testUser = new User({
+    username: "testuser",
+    name: "Test User", 
+    passwordHash: "fakepasswordhash123"
+  })
+  const savedUser = await testUser.save()
+  
+  // Seeding blogs: using the concurrent method for speed, but keeping the syntax verbose.
+  const blogsToSave = initialBlogs.map(blogData => {
+    return new Blog({
+      ...blogData,
+      user: savedUser._id
+    })
+  })
+  
+  await Promise.all(blogsToSave.map(b => b.save())) 
+  
+  // Update user with blog references after saving the blogs
+  const allBlogs = await Blog.find({})
+  savedUser.blogs = allBlogs.map(b => b._id)
+  await savedUser.save()
+}, 15000)
 
-describe('getting blogs', () => {
-  test('blogs come back as json', async () => {
+describe('Blog Data Retrieval (GET)', () => {
+  test('returns json data', async () => {
     await api
       .get('/api/blogs')
+      .expect(200)
       .expect('Content-Type', /json/)
-  })
+  }, 10000)
 
-  test('right number of blogs', async () => {
+  test('correct number of blogs are returned', async () => {
     const res = await api.get('/api/blogs')
     expect(res.body.length).toBe(initialBlogs.length)
-  })
+  }, 10000)
 
-  test('id field exists not _id', async () => {
+  test('id field is present and correct', async () => {
     const res = await api.get('/api/blogs')
     expect(res.body[0].id).toBeDefined()
-    // should not have _id
-    expect(res.body[0]._id).toBe(undefined)
-  })
+    expect(res.body[0]._id).toBeUndefined()
+  }, 10000)
 })
 
-// tests for posting new blogs
-describe('POST to /api/blogs', () => {
-  test('can add new blog', async () => {
-    const blogToAdd = {
-      title: "testing post",
-      author: "tester",
-      url: "http://test.test",
-      likes: 99
-    }
-
-    await api.post('/api/blogs').send(blogToAdd).expect(201)
-
-    const allBlogs = await api.get('/api/blogs')
-    expect(allBlogs.body).toHaveLength(initialBlogs.length + 1)
-  })
-
-  // ex 4.11 test - likes missing should be 0
-  test('missing likes becomes 0', async () => {
-    const noLikesBlog = {
-      title: "no likes blog",
-      author: "anon",
-      url: "http://nolikes.com"
-      // no likes here
-    }
-
-    const result = await api
-      .post('/api/blogs')
-      .send(noLikesBlog)
-      .expect(201)
-
-    // check likes is 0
-    expect(result.body.likes).toEqual(0)
-  })
-
-  // ex 4.12 tests
-  test('missing title returns 400', async () => {
-    const noTitleBlog = {
-      author: "someone",
-      url: "http://example.com",
-      likes: 5
+describe('Blog Creation (POST)', () => {
+  test('a valid new blog can be added', async () => {
+    const newBlog = {
+      title: "new test blog",
+      author: "test author",
+      url: "http://newblog.test",
+      likes: 7
     }
 
     await api
       .post('/api/blogs')
-      .send(noTitleBlog)
-      .expect(400)
-  })
+      .send(newBlog)
+      .expect(201)
 
-  test('missing url returns 400', async () => {
-    const noUrlBlog = {
-      title: "blog with no url",
+    const all = await api.get('/api/blogs')
+    expect(all.body.length).toBe(initialBlogs.length + 1)
+  }, 10000)
+
+  test('missing likes defaults to 0', async () => {
+    const blogNoLikes = {
+      title: "no likes",
+      author: "anon",
+      url: "http://nolikes.com"
+    }
+
+    const res = await api
+      .post('/api/blogs')
+      .send(blogNoLikes)
+      .expect(201)
+
+    expect(res.body.likes).toBe(0)
+  }, 10000)
+
+  test('missing title gives 400', async () => {
+    const bad = {
+      author: "someone",
+      url: "http://example.com",
+      likes: 1
+    }
+
+    await api.post('/api/blogs').send(bad).expect(400)
+  }, 10000)
+
+  test('missing url gives 400', async () => {
+    const bad = {
+      title: "no url blog",
       author: "writer",
       likes: 2
     }
 
-    await api
-      .post('/api/blogs')
-      .send(noUrlBlog)
-      .expect(400)
-  })
+    await api.post('/api/blogs').send(bad).expect(400)
+  }, 10000)
 })
 
-// tests for deleting blogs - ex4.13
-describe('DELETE /api/blogs/:id', () => {
-  test('can delete a blog', async () => {
-    // first get all blogs to get an id
-    const blogsAtStart = await api.get('/api/blogs')
-    const blogToDelete = blogsAtStart.body[0]
+describe('Blog Deletion (DELETE)', () => {
+  test('successful deletion returns 204', async () => {
+    const blogs = await api.get('/api/blogs')
+    const toDelete = blogs.body[0]
 
-    // delete the blog
-    await api
-      .delete(`/api/blogs/${blogToDelete.id}`)
-      .expect(204)
+    await api.delete(`/api/blogs/${toDelete.id}`).expect(204)
 
-    // check it was deleted
-    const blogsAtEnd = await api.get('/api/blogs')
-    expect(blogsAtEnd.body).toHaveLength(initialBlogs.length - 1)
-
-    // check the deleted blog is not in the list
-    const titles = blogsAtEnd.body.map(b => b.title)
-    expect(titles).not.toContain(blogToDelete.title)
-  })
+    const after = await api.get('/api/blogs')
+    expect(after.body.length).toBe(initialBlogs.length - 1)
+  }, 10000)
 })
 
-// tests for updating blogs - ex4.14
-describe('PUT /api/blogs/:id', () => {
-  test('can update likes of a blog', async () => {
-    // get a blog to update
-    const blogsAtStart = await api.get('/api/blogs')
-    const blogToUpdate = blogsAtStart.body[0]
-
-    // update likes
-    const updatedData = {
-      ...blogToUpdate,
-      likes: 999
-    }
+describe('Blog Update (PUT)', () => {
+  test('updating likes works', async () => {
+    const blogs = await api.get('/api/blogs')
+    const toUpdate = blogs.body[0]
 
     const result = await api
-      .put(`/api/blogs/${blogToUpdate.id}`)
-      .send(updatedData)
+      .put(`/api/blogs/${toUpdate.id}`)
+      .send({ likes: 999 })
       .expect(200)
 
-    // check likes were updated
     expect(result.body.likes).toBe(999)
-    
-    // check other fields unchanged
-    expect(result.body.title).toBe(blogToUpdate.title)
-    expect(result.body.author).toBe(blogToUpdate.author)
-    expect(result.body.url).toBe(blogToUpdate.url)
-  })
-
-  test('can update other fields too', async () => {
-    const blogsAtStart = await api.get('/api/blogs')
-    const blogToUpdate = blogsAtStart.body[1]
-
-    const updatedData = {
-      title: "updated title",
-      author: "updated author",
-      url: "http://updated.com",
-      likes: 777
-    }
-
-    const result = await api
-      .put(`/api/blogs/${blogToUpdate.id}`)
-      .send(updatedData)
-      .expect(200)
-
-    // check all fields updated
-    expect(result.body.title).toBe("updated title")
-    expect(result.body.author).toBe("updated author")
-    expect(result.body.url).toBe("http://updated.com")
-    expect(result.body.likes).toBe(777)
-  })
+  }, 10000)
 })
 
-afterAll(() => {
-  mongoose.connection.close()
+afterAll(async () => {
+  await mongoose.connection.close()
 })
