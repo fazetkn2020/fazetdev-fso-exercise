@@ -118,6 +118,28 @@ describe('POST to /api/blogs', () => {
   })
 })
 
+// tests for deleting blogs - ex4.13
+describe('DELETE /api/blogs/:id', () => {
+  test('can delete a blog', async () => {
+    // first get all blogs to get an id
+    const blogsAtStart = await api.get('/api/blogs')
+    const blogToDelete = blogsAtStart.body[0]
+
+    // delete the blog
+    await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .expect(204)
+
+    // check it was deleted
+    const blogsAtEnd = await api.get('/api/blogs')
+    expect(blogsAtEnd.body).toHaveLength(initialBlogs.length - 1)
+
+    // check the deleted blog is not in the list
+    const titles = blogsAtEnd.body.map(b => b.title)
+    expect(titles).not.toContain(blogToDelete.title)
+  })
+})
+
 afterAll(() => {
   mongoose.connection.close()
 })
