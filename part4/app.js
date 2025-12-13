@@ -1,31 +1,36 @@
 const express = require('express')
 const mongoose = require('mongoose')
+// had to add login router later, forgot at first
 const blogsRouter = require('./controllers/blogs')
 const usersRouter = require('./controllers/users')
-require('dotenv').config()
+const loginRouter = require('./controllers/login')
+require('dotenv').config() // need this for SECRET
 
 const app = express()
 
-// Only connect to MongoDB if not in test environment
-// In test environment, the tests will handle the connection
+// only connect to db if not testing (tests handle their own connection)
+// this part always confuses me a bit
 if (process.env.NODE_ENV !== 'test') {
-  // Database connection - use test DB when NODE_ENV is 'test'
-  const MONGODB_URI = process.env.NODE_ENV === 'test'
-    ? process.env.TEST_MONGODB_URI
-    : process.env.MONGODB_URI
-
-  // Connect to MongoDB
-  mongoose.connect(MONGODB_URI)
-    .then(() => {
-      console.log(`Connected to MongoDB (${process.env.NODE_ENV || 'development'} mode)`)
+  let mongoUrl
+  if (process.env.NODE_ENV === 'test') {
+    mongoUrl = process.env.TEST_MONGODB_URI
+  } else {
+    mongoUrl = process.env.MONGODB_URI
+  }
+  
+  mongoose.connect(mongoUrl)
+    .then(result => {
+      console.log('connected to mongodb')
     })
     .catch((error) => {
-      console.error('Error connecting to MongoDB:', error.message)
+      console.log('error connecting to mongodb:', error.message)
     })
 }
 
 app.use(express.json())
 app.use('/api/blogs', blogsRouter)
 app.use('/api/users', usersRouter)
+app.use('/api/login', loginRouter) // new route for ex4.18
 
+// forgot to export app at first lol
 module.exports = app
