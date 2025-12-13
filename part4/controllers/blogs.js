@@ -1,115 +1,92 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
 const User = require('../models/user')
-const jwt = require('jsonwebtoken')
+const { userExtractor } = require('../utils/middleware')
 
 blogsRouter.get('/', async (request, response) => {
-  const blogs = await Blog.find({}).populate('user', 'username name')
+  const blogs = await Blog.find({}).populate('user', { username: 1, name: 1 })
   response.json(blogs)
 })
 
-blogsRouter.post('/', async (request, response) => {
-  const body = request.body
+blogsRouter.post('/', userExtractor, async (req, res) => {
+  const data = req.body
   
-  if (!body.title || !body.url) {
-    return response.status(400).json({ error: 'need title and url' })
+  if (!data.title) {
+    return res.status(400).send({ error: 'blog title is required' })
+  }
+  if (!data.url) {
+    return res.status(400).send({ error: 'url is a must-have' })
   }
   
-  const token = request.token
-  if (!token) {
-    return response.status(401).json({ error: 'token missing' })
-  }
-  
-  let decodedToken
-  try {
-    decodedToken = jwt.verify(token, process.env.SECRET)
-  } catch (error) {
-    return response.status(401).json({ error: 'token invalid' })
-  }
-  
-  if (!decodedToken.id) {
-    return response.status(401).json({ error: 'invalid token' })
-  }
-  
-  const user = await User.findById(decodedToken.id)
+  const user = await User.findById(req.user.id)
   if (!user) {
-    return response.status(401).json({ error: 'user not found' })
+    return res.status(400).json({ error: 'fatal user lookup error' }) 
   }
   
-  const blog = new Blog({
-    title: body.title,
-    author: body.author,
-    url: body.url,
-    likes: body.likes || 0,
+  const newBlog = new Blog({
+    title: data.title,
+    author: data.author || 'Mister Anonymous',
+    url: data.url,
+    likes: data.likes === null || data.likes === undefined ? 0 : data.likes,
     user: user._id
   })
   
   try {
-    const savedBlog = await blog.save()
+    const savedBlogEntry = await newBlog.save()
     
-    user.blogs = user.blogs.concat(savedBlog._id)
+    user.blogs.push(savedBlogEntry._id)
     await user.save()
     
-    const blogWithUser = await Blog.findById(savedBlog._id).populate('user', 'username name')
-    response.status(201).json(blogWithUser)
-  } catch (error) {
-    response.status(500).json({ error: 'save failed' })
+    const finalResult = await Blog.findById(savedBlogEntry._id).populate('user', 'username name')
+    res.status(201).json(finalResult)
+  } catch (dbError) {
+    console.log('--- DB SAVE FAILURE ---', dbError.message) 
+    res.status(500).json({ error: 'Internal Server Error: Could not persist blog data' })
   }
 })
 
-blogsRouter.delete('/:id', async (request, response) => {
-  const token = request.token
+blogsRouter.delete('/:id', userExtractor, async (req, res) => {
+  const currentUserId = req.user.id
   
-  if (!token) {
-    return response.status(401).json({ error: 'token missing' })
+  const blogToDelete = await Blog.findById(req.params.id)
+  
+  if (!blogToDelete) {
+    return res.status(404).json({ error: 'Blog not found by ID' })
   }
   
-  let decodedToken
+  if (String(blogToDelete.user) !== String(currentUserId)) {
+    return res.status(403).json({ error: 'Permission Denied: You do not own this blog.' })
+  }
+  
+  await Blog.findByIdAndDelete(req.params.id)
+  
+  const ownerUser = await User.findById(currentUserId)
+  if (ownerUser) {
+    ownerUser.blogs = ownerUser.blogs.filter(blogId => !blogId.equals(req.params.id))
+    await ownerUser.save()
+  }
+  
+  res.status(204).end()
+})
+
+blogsRouter.put('/:id', async (req, res) => {
+  const updatePayload = req.body
+  
+  if (updatePayload.likes === undefined) {
+      return res.status(400).json({ error: 'Missing the likes count for update' })
+  }
+  
   try {
-    decodedToken = jwt.verify(token, process.env.SECRET)
-  } catch (error) {
-    return response.status(401).json({ error: 'token invalid' })
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      req.params.id,
+      { likes: updatePayload.likes },
+      { new: true, runValidators: true }
+    )
+    
+    res.json(updatedBlog)
+  } catch (e) {
+      res.status(400).json({ error: 'Update failed due to bad data' })
   }
-  
-  if (!decodedToken.id) {
-    return response.status(401).json({ error: 'invalid token' })
-  }
-  
-  // get blog to check owner
-  const blog = await Blog.findById(request.params.id)
-  if (!blog) {
-    return response.status(404).json({ error: 'blog not found' })
-  }
-  
-  // check if user is creator
-  // blog.user is ObjectId, need to convert to string
-  if (blog.user.toString() !== decodedToken.id.toString()) {
-    return response.status(403).json({ error: 'not authorized' })
-  }
-  
-  // delete blog
-  await Blog.findByIdAndDelete(request.params.id)
-  
-  // also remove from user's blogs array (optional but good)
-  const user = await User.findById(decodedToken.id)
-  if (user) {
-    user.blogs = user.blogs.filter(b => b.toString() !== request.params.id)
-    await user.save()
-  }
-  
-  response.status(204).end()
-})
-
-blogsRouter.put('/:id', async (request, response) => {
-  const body = request.body
-
-  const updatedBlog = await Blog.findByIdAndUpdate(
-    request.params.id,
-    { likes: body.likes },
-    { new: true }
-  )
-
-  response.json(updatedBlog)
 })
 
 module.exports = blogsRouter

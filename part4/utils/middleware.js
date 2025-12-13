@@ -1,31 +1,41 @@
 const jwt = require('jsonwebtoken')
 
-// ex4.20 tokenExtractor middleware
-const tokenExtractor = (request, response, next) => {
-  const auth = request.get('authorization')
+function tokenExtractor(req, res, next) {
+  const auth = req.get('authorization')
   
   if (auth && auth.toLowerCase().startsWith('bearer ')) {
-    request.token = auth.substring(7)
+    req.token = auth.split(' ')[1]
   } else {
-    request.token = null
+    req.token = null
   }
   
   next()
 }
 
-// ex4.21 user check middleware (optional)
-const userExtractor = async (req, res, next) => {
-  if (!req.token) {
-    return res.status(401).json({ error: 'token missing' })
+async function userExtractor(req, res, next) {
+  const token = req.token
+  
+  if (!token) {
+    return res.status(401).send({ error: 'need token' })
   }
   
+  let decoded
   try {
-    const decoded = jwt.verify(req.token, process.env.SECRET)
-    req.user = decoded
-    next()
-  } catch (error) {
-    return res.status(401).json({ error: 'token invalid' })
+    decoded = jwt.verify(token, process.env.SECRET)
+  } catch (err) {
+    return res.status(401).send({ error: 'bad token' })
   }
+  
+  if (!decoded.id) {
+    return res.status(401).send({ error: 'token weird' })
+  }
+  
+  req.user = {
+    id: decoded.id,
+    username: decoded.username
+  }
+  
+  next()
 }
 
 module.exports = {
