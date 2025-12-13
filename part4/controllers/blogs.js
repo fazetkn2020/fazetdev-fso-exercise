@@ -1,96 +1,115 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
 const User = require('../models/user')
-// trying to use the middleware i made
-const { getUserFromToken, getToken } = require('../utils/middleware')
+const jwt = require('jsonwebtoken')
 
 blogsRouter.get('/', async (request, response) => {
   const blogs = await Blog.find({}).populate('user', 'username name')
   response.json(blogs)
 })
 
-// using middleware for token check
-// not sure if this is how you chain middleware
-blogsRouter.post('/', getUserFromToken, async (request, response, next) => {
+blogsRouter.post('/', async (request, response) => {
   const body = request.body
   
-  // forgot to check title/url at first, had to add later
-  if (!body.title) {
-    return response.status(400).json({ error: 'title missing' })
-  }
-  if (!body.url) {
-    return response.status(400).json({ error: 'url missing' })
+  if (!body.title || !body.url) {
+    return response.status(400).json({ error: 'need title and url' })
   }
   
-  // user id should be from middleware
-  // but what if middleware failed? it should have returned already
-  const userId = request.userId
+  const token = request.token
+  if (!token) {
+    return response.status(401).json({ error: 'token missing' })
+  }
   
-  // find user - maybe should have done this in middleware?
-  const user = await User.findById(userId)
+  let decodedToken
+  try {
+    decodedToken = jwt.verify(token, process.env.SECRET)
+  } catch (error) {
+    return response.status(401).json({ error: 'token invalid' })
+  }
+  
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'invalid token' })
+  }
+  
+  const user = await User.findById(decodedToken.id)
   if (!user) {
-    return response.status(400).json({ error: 'user not found' })
-    // is 400 right? or 401? not sure
+    return response.status(401).json({ error: 'user not found' })
   }
   
-  // create blog
   const blog = new Blog({
     title: body.title,
-    author: body.author || 'unknown', // default value just in case
+    author: body.author,
     url: body.url,
-    likes: body.likes === undefined ? 0 : body.likes, // different way to default
+    likes: body.likes || 0,
     user: user._id
   })
   
   try {
     const savedBlog = await blog.save()
     
-    // update user's blogs
-    // sometimes i forget this part
-    user.blogs = user.blogs || [] // in case blogs array doesnt exist
-    user.blogs.push(savedBlog._id)
+    user.blogs = user.blogs.concat(savedBlog._id)
     await user.save()
     
-    // get with user info
-    const finalBlog = await Blog.findById(savedBlog._id).populate('user', 'username name')
-    response.status(201).json(finalBlog)
+    const blogWithUser = await Blog.findById(savedBlog._id).populate('user', 'username name')
+    response.status(201).json(blogWithUser)
   } catch (error) {
-    console.log('save error', error.message)
-    response.status(500).json({ error: 'failed to save' })
+    response.status(500).json({ error: 'save failed' })
   }
 })
 
-// delete doesnt use token yet (maybe should?)
 blogsRouter.delete('/:id', async (request, response) => {
-  try {
-    await Blog.findByIdAndDelete(request.params.id)
-    response.status(204).end()
-  } catch (error) {
-    response.status(400).json({ error: 'delete failed' })
+  const token = request.token
+  
+  if (!token) {
+    return response.status(401).json({ error: 'token missing' })
   }
+  
+  let decodedToken
+  try {
+    decodedToken = jwt.verify(token, process.env.SECRET)
+  } catch (error) {
+    return response.status(401).json({ error: 'token invalid' })
+  }
+  
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'invalid token' })
+  }
+  
+  // get blog to check owner
+  const blog = await Blog.findById(request.params.id)
+  if (!blog) {
+    return response.status(404).json({ error: 'blog not found' })
+  }
+  
+  // check if user is creator
+  // blog.user is ObjectId, need to convert to string
+  if (blog.user.toString() !== decodedToken.id.toString()) {
+    return response.status(403).json({ error: 'not authorized' })
+  }
+  
+  // delete blog
+  await Blog.findByIdAndDelete(request.params.id)
+  
+  // also remove from user's blogs array (optional but good)
+  const user = await User.findById(decodedToken.id)
+  if (user) {
+    user.blogs = user.blogs.filter(b => b.toString() !== request.params.id)
+    await user.save()
+  }
+  
+  response.status(204).end()
 })
 
-// update also no token check
 blogsRouter.put('/:id', async (request, response) => {
   const body = request.body
-  
-  // only updating likes for now
-  const updateData = {}
-  if (body.likes !== undefined) {
-    updateData.likes = body.likes
-  }
-  // could add other fields later
-  
-  try {
-    const updated = await Blog.findByIdAndUpdate(
-      request.params.id,
-      updateData,
-      { new: true }
-    )
-    response.json(updated)
-  } catch (error) {
-    response.status(400).json({ error: 'update failed' })
-  }
+
+  const updatedBlog = await Blog.findByIdAndUpdate(
+    request.params.id,
+    { likes: body.likes },
+    { new: true }
+  )
+
+  response.json(updatedBlog)
 })
 
 module.exports = blogsRouter
