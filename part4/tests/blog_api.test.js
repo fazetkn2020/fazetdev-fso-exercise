@@ -140,6 +140,57 @@ describe('DELETE /api/blogs/:id', () => {
   })
 })
 
+// tests for updating blogs - ex4.14
+describe('PUT /api/blogs/:id', () => {
+  test('can update likes of a blog', async () => {
+    // get a blog to update
+    const blogsAtStart = await api.get('/api/blogs')
+    const blogToUpdate = blogsAtStart.body[0]
+
+    // update likes
+    const updatedData = {
+      ...blogToUpdate,
+      likes: 999
+    }
+
+    const result = await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send(updatedData)
+      .expect(200)
+
+    // check likes were updated
+    expect(result.body.likes).toBe(999)
+    
+    // check other fields unchanged
+    expect(result.body.title).toBe(blogToUpdate.title)
+    expect(result.body.author).toBe(blogToUpdate.author)
+    expect(result.body.url).toBe(blogToUpdate.url)
+  })
+
+  test('can update other fields too', async () => {
+    const blogsAtStart = await api.get('/api/blogs')
+    const blogToUpdate = blogsAtStart.body[1]
+
+    const updatedData = {
+      title: "updated title",
+      author: "updated author",
+      url: "http://updated.com",
+      likes: 777
+    }
+
+    const result = await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send(updatedData)
+      .expect(200)
+
+    // check all fields updated
+    expect(result.body.title).toBe("updated title")
+    expect(result.body.author).toBe("updated author")
+    expect(result.body.url).toBe("http://updated.com")
+    expect(result.body.likes).toBe(777)
+  })
+})
+
 afterAll(() => {
   mongoose.connection.close()
 })
