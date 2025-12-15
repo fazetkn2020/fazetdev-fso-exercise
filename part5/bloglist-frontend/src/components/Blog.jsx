@@ -45,32 +45,37 @@ const Blog = ({ blog, updateBlog, deleteBlog, user }) => {
   // Check if the current user is the creator of this blog
   const isBlogCreator = () => {
     if (!user || !blog.user) return false
-    
+
     const currentUserId = user.id || user._id
     const blogUserId = blog.user?.id || blog.user?._id || blog.user
-    
+
     return currentUserId === blogUserId
   }
 
   return (
-    <div style={blogStyle}>
-      <div>
-        {blog.title} {blog.author}
-        <button onClick={toggleVisibility}>
+    <div className="blog" style={blogStyle}>
+      <div className="blog-summary">
+        <span className="blog-title">{blog.title}</span>{' '}
+        <span className="blog-author">{blog.author}</span>
+        <button className="toggle-visibility" onClick={toggleVisibility}>
           {visible ? 'hide' : 'view'}
         </button>
       </div>
       {visible && (
-        <div>
-          <div>{blog.url}</div>
-          <div>
-            likes {blog.likes}
-            <button onClick={handleLike}>like</button>
+        <div className="blog-details">
+          <div className="blog-url">{blog.url}</div>
+          <div className="blog-likes">
+            likes <span className="likes-count">{blog.likes}</span>
+            <button className="like-button" onClick={handleLike}>like</button>
           </div>
-          <div>{getUserName()}</div>
+          <div className="blog-user">{getUserName()}</div>
           {isBlogCreator() && (
             <div>
-              <button onClick={handleDelete} style={{ background: 'red', color: 'white' }}>
+              <button 
+                className="delete-button" 
+                onClick={handleDelete} 
+                style={{ background: 'red', color: 'white' }}
+              >
                 delete
               </button>
             </div>
