@@ -52,7 +52,7 @@ const App = () => {
       setUsername('')
       setPassword('')
       showNotification(`Welcome ${user.name}!`, false)
-    } catch (exception) {
+    } catch {
       showNotification('Wrong username or password', true)
     }
   }
@@ -69,7 +69,7 @@ const App = () => {
       setBlogs(blogs.concat(createdBlog))
       blogFormRef.current.toggleVisibility()
       showNotification(`A new blog "${createdBlog.title}" by ${createdBlog.author} added`, false)
-    } catch (exception) {
+    } catch {
       showNotification('Error creating blog', true)
     }
   }
@@ -84,8 +84,22 @@ const App = () => {
         user: updatedBlog.user || originalBlog?.user
       }
       setBlogs(blogs.map(blog => blog.id === id ? blogWithUser : blog))
-    } catch (exception) {
+    } catch {
       showNotification('Error updating blog', true)
+    }
+  }
+
+  const deleteBlog = async (id) => {
+    const blogToDelete = blogs.find(b => b.id === id)
+    
+    if (window.confirm(`Remove blog "${blogToDelete.title}" by ${blogToDelete.author}?`)) {
+      try {
+        await blogService.remove(id)
+        setBlogs(blogs.filter(blog => blog.id !== id))
+        showNotification(`Blog "${blogToDelete.title}" deleted successfully`, false)
+      } catch {
+        showNotification('Error deleting blog', true)
+      }
     }
   }
 
@@ -158,7 +172,13 @@ const App = () => {
       </Togglable>
 
       {sortedBlogs.map(blog =>
-        <Blog key={blog.id} blog={blog} updateBlog={updateBlog} />
+        <Blog 
+          key={blog.id} 
+          blog={blog} 
+          updateBlog={updateBlog} 
+          deleteBlog={deleteBlog}
+          user={user}
+        />
       )}
     </div>
   )
