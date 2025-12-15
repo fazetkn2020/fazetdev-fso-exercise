@@ -82,4 +82,35 @@ describe('<Blog />', () => {
     expect(screen.getByText('likes', { exact: false })).toBeDefined()
     expect(screen.getByText('5')).toBeDefined()
   })
+
+  test('calls updateBlog twice when like button is clicked twice', async () => {
+    render(
+      <Blog 
+        blog={blog} 
+        updateBlog={mockUpdateBlog} 
+        deleteBlog={mockDeleteBlog}
+        user={mockUser}
+      />
+    )
+
+    // Click view button to show details
+    const user = userEvent.setup()
+    const viewButton = screen.getByText('view')
+    await user.click(viewButton)
+
+    // Click like button twice
+    const likeButton = screen.getByText('like')
+    await user.click(likeButton)
+    await user.click(likeButton)
+
+    // Check that updateBlog was called twice
+    expect(mockUpdateBlog.mock.calls).toHaveLength(2)
+    
+    // Check that correct data was sent
+    expect(mockUpdateBlog.mock.calls[0][0]).toBe(blog.id)
+    expect(mockUpdateBlog.mock.calls[0][1].likes).toBe(6) // 5 + 1
+    
+    expect(mockUpdateBlog.mock.calls[1][0]).toBe(blog.id)
+    expect(mockUpdateBlog.mock.calls[1][1].likes).toBe(6) // Still 6 because blog.likes hasn't changed
+  })
 })
