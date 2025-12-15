@@ -9,6 +9,7 @@ const App = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [newBlog, setNewBlog] = useState({ title: '', author: '', url: '' })
+  const [notification, setNotification] = useState(null)
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
@@ -25,6 +26,13 @@ const App = () => {
     )
   }, [])
 
+  const showNotification = (message, isError = false) => {
+    setNotification({ message, isError })
+    setTimeout(() => {
+      setNotification(null)
+    }, 5000)
+  }
+
   const handleLogin = async (event) => {
     event.preventDefault()
 
@@ -40,32 +48,58 @@ const App = () => {
       setUser(user)
       setUsername('')
       setPassword('')
+      showNotification(`Welcome ${user.name}!`, false)
     } catch (exception) {
-      console.log('Wrong credentials')
+      showNotification('Wrong username or password', true)
     }
   }
 
   const handleLogout = () => {
     window.localStorage.removeItem('loggedBlogappUser')
     setUser(null)
+    showNotification('Logged out successfully', false)
   }
 
   const addBlog = async (event) => {
     event.preventDefault()
-    
+
     try {
       const createdBlog = await blogService.create(newBlog)
       setBlogs(blogs.concat(createdBlog))
       setNewBlog({ title: '', author: '', url: '' })
+      showNotification(`A new blog "${createdBlog.title}" by ${createdBlog.author} added`, false)
     } catch (exception) {
-      console.log('Error creating blog')
+      showNotification('Error creating blog', true)
     }
+  }
+
+  const Notification = ({ notification }) => {
+    if (notification === null) {
+      return null
+    }
+
+    const style = {
+      color: notification.isError ? 'red' : 'green',
+      background: 'lightgrey',
+      fontSize: 20,
+      borderStyle: 'solid',
+      borderRadius: 5,
+      padding: 10,
+      marginBottom: 10
+    }
+
+    return (
+      <div style={style}>
+        {notification.message}
+      </div>
+    )
   }
 
   if (user === null) {
     return (
       <div>
         <h2>Log in to application</h2>
+        <Notification notification={notification} />
         <form onSubmit={handleLogin}>
           <div>
             username
@@ -94,11 +128,12 @@ const App = () => {
   return (
     <div>
       <h2>blogs</h2>
+      <Notification notification={notification} />
       <p>
         {user.name} logged in
         <button onClick={handleLogout}>logout</button>
       </p>
-      
+
       <h3>create new</h3>
       <form onSubmit={addBlog}>
         <div>
