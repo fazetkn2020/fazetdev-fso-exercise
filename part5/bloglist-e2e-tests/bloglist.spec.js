@@ -125,5 +125,43 @@ describe('Blog app', () => {
         page.getByRole('button', { name: 'delete' })
       ).not.toBeVisible()
     })
+
+    test('blogs are ordered according to likes, most liked first', async ({ page }) => {
+      // Helper to create blog
+      const createBlog = async (title, author, url) => {
+        await page.getByRole('button', { name: 'new blog' }).click()
+        await page.getByTestId('title').fill(title)
+        await page.getByTestId('author').fill(author)
+        await page.getByTestId('url').fill(url)
+        await page.getByRole('button', { name: 'create' }).click()
+        await expect(page.getByText(`${title} ${author}`)).toBeVisible()
+      }
+
+      // Create blogs
+      await createBlog('First Blog', 'Author1', 'http://first.com')
+      await createBlog('Second Blog', 'Author2', 'http://second.com')
+      await createBlog('Third Blog', 'Author3', 'http://third.com')
+
+      // Helper to like a blog N times
+      const likeBlog = async (title, times) => {
+        const blog = page.getByText(title).locator('..') // parent container
+        await blog.getByRole('button', { name: 'view' }).click()
+        for (let i = 0; i < times; i++) {
+          await blog.getByRole('button', { name: 'like' }).click()
+          await page.waitForTimeout(500) // small wait to allow UI to update
+        }
+      }
+
+      // Give likes
+      await likeBlog('Second Blog', 3) // most likes
+      await likeBlog('First Blog', 1)
+      await likeBlog('Third Blog', 2)
+
+      // Check order: Second Blog, Third Blog, First Blog
+      const blogs = page.locator('.blog') // container class of each blog
+      await expect(blogs.nth(0)).toContainText('Second Blog')
+      await expect(blogs.nth(1)).toContainText('Third Blog')
+      await expect(blogs.nth(2)).toContainText('First Blog')
+    })
   })
 })
