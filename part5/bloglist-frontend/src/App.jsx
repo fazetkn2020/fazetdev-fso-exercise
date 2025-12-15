@@ -111,6 +111,9 @@ const App = () => {
     )
   }
 
+  // Sort blogs by likes in descending order
+  const sortedBlogs = [...blogs].sort((a, b) => b.likes - a.likes)
+
   if (user === null) {
     return (
       <div>
@@ -154,7 +157,7 @@ const App = () => {
         <BlogForm createBlog={createBlog} />
       </Togglable>
 
-      {blogs.map(blog =>
+      {sortedBlogs.map(blog =>
         <Blog key={blog.id} blog={blog} updateBlog={updateBlog} />
       )}
     </div>
