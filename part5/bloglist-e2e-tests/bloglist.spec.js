@@ -58,5 +58,33 @@ describe('Blog app', () => {
       // Likes should increase
       await expect(page.getByText('likes 1')).toBeVisible()
     })
+
+    test('the user who created a blog can delete it', async ({ page }) => {
+      // Create a blog first
+      await page.getByRole('button', { name: 'new blog' }).click()
+
+      await page.getByTestId('title').fill('Blog to be deleted')
+      await page.getByTestId('author').fill('Delete Tester')
+      await page.getByTestId('url').fill('http://example.com')
+      await page.getByRole('button', { name: 'create' }).click()
+
+      await expect(page.getByText('Blog to be deleted Delete Tester')).toBeVisible()
+
+      // Open blog details
+      await page.getByRole('button', { name: 'view' }).click()
+
+      // Handle confirmation dialog
+      page.on('dialog', async dialog => {
+        await dialog.accept()
+      })
+
+      // Click delete
+      await page.getByRole('button', { name: 'delete' }).click()
+
+      // Blog should be removed from the list
+      await expect(
+        page.getByText('Blog to be deleted Delete Tester')
+      ).not.toBeVisible()
+    })
   })
 })
