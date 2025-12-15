@@ -16,8 +16,11 @@ const Blog = ({ blog, updateBlog }) => {
   }
 
   const handleLike = async () => {
+    // Send user ID as string (backend expects this based on exercise example)
+    const userToSend = blog.user?.id || blog.user?._id || blog.user
+    
     const blogToUpdate = {
-      user: blog.user.id,
+      user: userToSend,
       likes: blog.likes + 1,
       author: blog.author,
       title: blog.title,
@@ -25,6 +28,12 @@ const Blog = ({ blog, updateBlog }) => {
     }
 
     updateBlog(blog.id, blogToUpdate)
+  }
+
+  const getUserName = () => {
+    if (!blog.user) return ''
+    if (typeof blog.user === 'object') return blog.user.name
+    return blog.user // might be just ID string
   }
 
   return (
@@ -42,7 +51,7 @@ const Blog = ({ blog, updateBlog }) => {
             likes {blog.likes}
             <button onClick={handleLike}>like</button>
           </div>
-          <div>{blog.user?.name}</div>
+          <div>{getUserName()}</div>
         </div>
       )}
     </div>

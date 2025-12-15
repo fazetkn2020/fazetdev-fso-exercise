@@ -77,7 +77,13 @@ const App = () => {
   const updateBlog = async (id, blogObject) => {
     try {
       const updatedBlog = await blogService.update(id, blogObject)
-      setBlogs(blogs.map(blog => blog.id === id ? updatedBlog : blog))
+      // Preserve user data if not in response
+      const originalBlog = blogs.find(b => b.id === id)
+      const blogWithUser = {
+        ...updatedBlog,
+        user: updatedBlog.user || originalBlog?.user
+      }
+      setBlogs(blogs.map(blog => blog.id === id ? blogWithUser : blog))
     } catch (exception) {
       showNotification('Error updating blog', true)
     }
