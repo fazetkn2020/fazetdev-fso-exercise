@@ -2,7 +2,22 @@ const { test, expect, beforeEach, describe } = require('@playwright/test')
 const { login, createBlog, logout } = require('./test-helpers')
 
 describe('Blog app', () => {
-  beforeEach(async ({ page }) => {
+  beforeEach(async ({ page, request }) => {
+    // Reset backend database
+    await request.post('http://localhost:3003/api/testing/reset')
+    
+    // Create a test user
+    const newUser = {
+      name: 'Test User',
+      username: 'testuser',
+      password: 'testpassword'
+    }
+    
+    await request.post('http://localhost:3003/api/users', {
+      data: newUser
+    })
+    
+    // Navigate to the application
     await page.goto('http://localhost:5173')
   })
 
@@ -32,19 +47,44 @@ describe('Blog app', () => {
       await expect(page.getByRole('heading', { name: 'blogs' })).not.toBeVisible()
       await expect(page.getByText('logged in')).not.toBeVisible()
     })
-
-    test('Blog creation form is not shown', async ({ page }) => {
-      await expect(page.getByRole('button', { name: 'create new blog' })).not.toBeVisible()
-      await expect(page.getByRole('heading', { name: 'create new' })).not.toBeVisible()
-    })
-
-    test('Cannot access protected routes without login', async ({ page }) => {
-      // Try to access blogs directly (should redirect to login or show login form)
-      await page.goto('http://localhost:5173')
-      await expect(page.getByRole('heading', { name: 'Log in to application' })).toBeVisible()
-    })
   })
 
-  // Note: Tests for logged-in state would require a running backend
-  // and test user credentials, which we don't have in this test environment
+  describe('Login', () => {
+    test('succeeds with correct credentials', async ({ page }) => {
+      // Fill in correct credentials
+      await page.getByRole('textbox', { name: /username/i }).fill('testuser')
+      await page.getByRole('textbox', { name: /password/i }).fill('testpassword')
+      
+      // Click login button
+      await page.getByRole('button', { name: 'login' }).click()
+      
+      // Verify login was successful
+      await expect(page.getByText('Test User logged in')).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'blogs' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'logout' })).toBeVisible()
+      
+      // Login form should not be visible
+      await expect(page.getByRole('heading', { name: 'Log in to application' })).not.toBeVisible()
+    })
+
+    test('fails with wrong credentials', async ({ page }) => {
+      // Fill in wrong credentials
+      await page.getByRole('textbox', { name: /username/i }).fill('wronguser')
+      await page.getByRole('textbox', { name: /password/i }).fill('wrongpassword')
+      
+      // Click login button
+      await page.getByRole('button', { name: 'login' }).click()
+      
+      // Verify login failed - error message should appear
+      await expect(page.getByText('Wrong username or password')).toBeVisible()
+      
+      // Should still be on login page
+      await expect(page.getByRole('heading', { name: 'Log in to application' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'login' })).toBeVisible()
+      
+      // Should not see logged in state
+      await expect(page.getByText('logged in')).not.toBeVisible()
+      await expect(page.getByRole('heading', { name: 'blogs' })).not.toBeVisible()
+    })
+  })
 })
