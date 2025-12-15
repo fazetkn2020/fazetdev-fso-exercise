@@ -86,5 +86,44 @@ describe('Blog app', () => {
         page.getByText('Blog to be deleted Delete Tester')
       ).not.toBeVisible()
     })
+
+    test('only the user who added the blog sees the delete button', async ({ page, request }) => {
+      // Create a blog as first user
+      await page.getByRole('button', { name: 'new blog' }).click()
+
+      await page.getByTestId('title').fill('Private blog')
+      await page.getByTestId('author').fill('Owner User')
+      await page.getByTestId('url').fill('http://example.com')
+      await page.getByRole('button', { name: 'create' }).click()
+
+      await expect(page.getByText('Private blog Owner User')).toBeVisible()
+
+      // Log out first user
+      await page.getByRole('button', { name: 'logout' }).click()
+
+      // Create second user
+      await request.post('http://localhost:3003/api/users', {
+        data: {
+          name: 'Another User',
+          username: 'anotheruser',
+          password: 'password123'
+        }
+      })
+
+      // Log in as second user
+      await page.getByTestId('username').fill('anotheruser')
+      await page.getByTestId('password').fill('password123')
+      await page.getByRole('button', { name: 'login' }).click()
+
+      await expect(page.getByText('Another User logged in')).toBeVisible()
+
+      // Open blog details
+      await page.getByRole('button', { name: 'view' }).click()
+
+      // Delete button should NOT be visible
+      await expect(
+        page.getByRole('button', { name: 'delete' })
+      ).not.toBeVisible()
+    })
   })
 })
