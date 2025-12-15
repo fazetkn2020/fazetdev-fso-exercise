@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const Blog = ({ blog, updateBlog }) => {
+const Blog = ({ blog, updateBlog, deleteBlog, user }) => {
   const [visible, setVisible] = useState(false)
 
   const blogStyle = {
@@ -18,7 +18,7 @@ const Blog = ({ blog, updateBlog }) => {
   const handleLike = async () => {
     // Send user ID as string (backend expects this based on exercise example)
     const userToSend = blog.user?.id || blog.user?._id || blog.user
-    
+
     const blogToUpdate = {
       user: userToSend,
       likes: blog.likes + 1,
@@ -30,10 +30,26 @@ const Blog = ({ blog, updateBlog }) => {
     updateBlog(blog.id, blogToUpdate)
   }
 
+  const handleDelete = () => {
+    if (deleteBlog) {
+      deleteBlog(blog.id)
+    }
+  }
+
   const getUserName = () => {
     if (!blog.user) return ''
     if (typeof blog.user === 'object') return blog.user.name
     return blog.user // might be just ID string
+  }
+
+  // Check if the current user is the creator of this blog
+  const isBlogCreator = () => {
+    if (!user || !blog.user) return false
+    
+    const currentUserId = user.id || user._id
+    const blogUserId = blog.user?.id || blog.user?._id || blog.user
+    
+    return currentUserId === blogUserId
   }
 
   return (
@@ -52,6 +68,13 @@ const Blog = ({ blog, updateBlog }) => {
             <button onClick={handleLike}>like</button>
           </div>
           <div>{getUserName()}</div>
+          {isBlogCreator() && (
+            <div>
+              <button onClick={handleDelete} style={{ background: 'red', color: 'white' }}>
+                delete
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
