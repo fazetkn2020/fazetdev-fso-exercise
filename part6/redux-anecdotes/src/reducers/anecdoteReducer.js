@@ -25,33 +25,49 @@ const initialState = anecdotesAtStart.map(asObject)
 const reducer = (state = initialState, action) => {
   console.log('state now: ', state)
   console.log('action', action)
-  
+
   // Check action type
   if (action.type === 'VOTE') {
     // Get the id from action payload
     const id = action.payload.id
-    
+
     // find the anecdote to update
     const anecdoteToChange = state.find(a => a.id === id)
-    
+
     // if anecdote not found, return current state
     if (!anecdoteToChange) {
       console.log('couldnt find anecdote with id:', id)
       return state
     }
-    
+
     // create the changed anecdote
-    const changedAnecdote = { 
-      ...anecdoteToChange, 
-      votes: anecdoteToChange.votes + 1 
+    const changedAnecdote = {
+      ...anecdoteToChange,
+      votes: anecdoteToChange.votes + 1
     }
-    
+
     // return new state with updated anecdote
-    return state.map(anecdote => 
+    return state.map(anecdote =>
       anecdote.id !== id ? anecdote : changedAnecdote
     )
   }
   
+  // Handle adding new anecdote
+  if (action.type === 'NEW_ANECDOTE') {
+    // Get the content from action payload
+    const content = action.payload.content
+    
+    // Create new anecdote object
+    const newAnecdote = {
+      content: content,
+      id: getId(),
+      votes: 0
+    }
+    
+    // Return new state with the new anecdote added
+    return [...state, newAnecdote]
+  }
+
   // default: return current state unchanged
   return state
 }

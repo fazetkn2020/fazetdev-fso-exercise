@@ -1,8 +1,12 @@
 import { useSelector, useDispatch } from 'react-redux'
+import { useState } from 'react'
 
 const App = () => {
   const anecdotes = useSelector(state => state)
   const dispatch = useDispatch()
+  
+  // state for new anecdote input
+  const [newAnecdote, setNewAnecdote] = useState('')
 
   const vote = id => {
     console.log('vote', id)
@@ -11,6 +15,24 @@ const App = () => {
       type: 'VOTE',
       payload: { id: id }
     })
+  }
+  
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    
+    // check if input is not empty
+    if (newAnecdote.trim() === '') {
+      return
+    }
+    
+    // dispatch action to add new anecdote
+    dispatch({
+      type: 'NEW_ANECDOTE',
+      payload: { content: newAnecdote }
+    })
+    
+    // clear the input field
+    setNewAnecdote('')
   }
 
   return (
@@ -26,11 +48,14 @@ const App = () => {
         </div>
       ))}
       <h2>create new</h2>
-      <form>
+      <form onSubmit={handleSubmit}>
         <div>
-          <input />
+          <input 
+            value={newAnecdote}
+            onChange={(e) => setNewAnecdote(e.target.value)}
+          />
         </div>
-        <button>create</button>
+        <button type="submit">create</button>
       </form>
     </div>
   )
