@@ -9,18 +9,19 @@ const AnecdoteList = () => {
 
   const handleVote = async (anecdote) => {
     console.log('vote', anecdote.id)
-
+    
     // Dispatch vote thunk (sends to backend)
     dispatch(voteAnecdote(anecdote))
+    
     // Show notification
     dispatch(showNotification(`You voted for: "${anecdote.content}"`, 5000))
   }
-
+  
   // Filter anecdotes based on filter text
   const filteredAnecdotes = anecdotes.filter(anecdote =>
     anecdote.content.toLowerCase().includes(filter.toLowerCase())
   )
-
+  
   // Sort filtered anecdotes by votes (descending - most votes first)
   const sortedAnecdotes = [...filteredAnecdotes].sort((a, b) => b.votes - a.votes)
 

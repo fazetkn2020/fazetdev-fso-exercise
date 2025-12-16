@@ -4,7 +4,7 @@ const anecdoteSlice = createSlice({
   name: 'anecdotes',
   initialState: [],
   reducers: {
-    voteAnecdote(state, action) {
+    incrementVote(state, action) {
       const id = action.payload
       const anecdoteToChange = state.find(a => a.id === id)
       if (anecdoteToChange) {
@@ -16,11 +16,17 @@ const anecdoteSlice = createSlice({
     },
     setAnecdotes(state, action) {
       return action.payload
+    },
+    updateAnecdote(state, action) {
+      const updatedAnecdote = action.payload
+      return state.map(anecdote =>
+        anecdote.id === updatedAnecdote.id ? updatedAnecdote : anecdote
+      )
     }
   }
 })
 
-export const { voteAnecdote, appendAnecdote, setAnecdotes } = anecdoteSlice.actions
+const { incrementVote, appendAnecdote, setAnecdotes, updateAnecdote } = anecdoteSlice.actions
 
 // Thunk action creator to fetch anecdotes from backend
 export const initializeAnecdotes = () => {
@@ -46,7 +52,7 @@ export const createAnecdote = (content) => {
         content,
         votes: 0
       }
-      
+
       const response = await fetch('http://localhost:3001/anecdotes', {
         method: 'POST',
         headers: {
@@ -54,17 +60,49 @@ export const createAnecdote = (content) => {
         },
         body: JSON.stringify(newAnecdote)
       })
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      
+
       const createdAnecdote = await response.json()
       dispatch(appendAnecdote(createdAnecdote))
       return createdAnecdote
-      
+
     } catch (error) {
       console.error('Error creating anecdote:', error)
+      throw error
+    }
+  }
+}
+
+// Thunk action creator to vote for anecdote (update in backend)
+export const voteAnecdote = (anecdote) => {
+  return async dispatch => {
+    try {
+      const updatedAnecdote = {
+        ...anecdote,
+        votes: anecdote.votes + 1
+      }
+
+      const response = await fetch(`http://localhost:3001/anecdotes/${anecdote.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedAnecdote)
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const returnedAnecdote = await response.json()
+      dispatch(updateAnecdote(returnedAnecdote))
+      return returnedAnecdote
+
+    } catch (error) {
+      console.error('Error voting for anecdote:', error)
       throw error
     }
   }
