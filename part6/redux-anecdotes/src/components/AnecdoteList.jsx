@@ -8,6 +8,7 @@ const AnecdoteList = () => {
 
   const vote = id => {
     console.log('vote', id)
+    // Note: voteAnecdote now takes just the id directly (not an object)
     dispatch(voteAnecdote(id))
   }
   

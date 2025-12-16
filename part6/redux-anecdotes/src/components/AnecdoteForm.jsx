@@ -13,6 +13,7 @@ const AnecdoteForm = () => {
       return
     }
 
+    // Note: createAnecdote now takes just the content directly (not an object)
     dispatch(createAnecdote(newAnecdote))
     setNewAnecdote('')
   }
