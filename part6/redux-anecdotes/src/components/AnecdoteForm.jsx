@@ -1,20 +1,26 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { createAnecdote } from '../reducers/anecdoteReducer'
+import { showNotification } from '../reducers/notificationReducer'
 
 const AnecdoteForm = () => {
   const dispatch = useDispatch()
   const [newAnecdote, setNewAnecdote] = useState('')
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
     if (newAnecdote.trim() === '') {
       return
     }
 
-    // Note: createAnecdote now takes just the content directly (not an object)
+    // Dispatch create action
     dispatch(createAnecdote(newAnecdote))
+    
+    // Show notification
+    dispatch(showNotification(`New anecdote created: "${newAnecdote}"`, 5000))
+    
+    // Clear input field
     setNewAnecdote('')
   }
 
