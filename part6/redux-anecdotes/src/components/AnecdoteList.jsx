@@ -7,25 +7,20 @@ const AnecdoteList = () => {
   const filter = useSelector(state => state.filter)
   const dispatch = useDispatch()
 
-  const vote = async (id, content) => {
-    console.log('vote', id)
-    
-    // Find the anecdote to get its content for notification
-    const anecdoteToVote = anecdotes.find(a => a.id === id)
-    if (!anecdoteToVote) return
-    
-    // Dispatch vote action
-    dispatch(voteAnecdote(id))
-    
+  const handleVote = async (anecdote) => {
+    console.log('vote', anecdote.id)
+
+    // Dispatch vote thunk (sends to backend)
+    dispatch(voteAnecdote(anecdote))
     // Show notification
-    dispatch(showNotification(`You voted for: "${anecdoteToVote.content}"`, 5000))
+    dispatch(showNotification(`You voted for: "${anecdote.content}"`, 5000))
   }
-  
+
   // Filter anecdotes based on filter text
   const filteredAnecdotes = anecdotes.filter(anecdote =>
     anecdote.content.toLowerCase().includes(filter.toLowerCase())
   )
-  
+
   // Sort filtered anecdotes by votes (descending - most votes first)
   const sortedAnecdotes = [...filteredAnecdotes].sort((a, b) => b.votes - a.votes)
 
@@ -36,7 +31,7 @@ const AnecdoteList = () => {
           <div>{anecdote.content}</div>
           <div>
             has {anecdote.votes}
-            <button onClick={() => vote(anecdote.id, anecdote.content)}>vote</button>
+            <button onClick={() => handleVote(anecdote)}>vote</button>
           </div>
         </div>
       ))}
