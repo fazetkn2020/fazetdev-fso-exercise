@@ -1,5 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { useState } from 'react'
+import { voteAnecdote, createAnecdote } from './reducers/anecdoteReducer'
 
 const App = () => {
   const anecdotes = useSelector(state => state)
@@ -10,11 +11,8 @@ const App = () => {
 
   const vote = id => {
     console.log('vote', id)
-    // dispatch vote action with the id
-    dispatch({
-      type: 'VOTE',
-      payload: { id: id }
-    })
+    // use action creator instead of creating action object manually
+    dispatch(voteAnecdote(id))
   }
   
   const handleSubmit = (event) => {
@@ -25,11 +23,8 @@ const App = () => {
       return
     }
     
-    // dispatch action to add new anecdote
-    dispatch({
-      type: 'NEW_ANECDOTE',
-      payload: { content: newAnecdote }
-    })
+    // use action creator instead of creating action object manually
+    dispatch(createAnecdote(newAnecdote))
     
     // clear the input field
     setNewAnecdote('')
