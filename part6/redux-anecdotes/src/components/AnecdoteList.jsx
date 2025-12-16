@@ -2,17 +2,22 @@ import { useSelector, useDispatch } from 'react-redux'
 import { voteAnecdote } from '../reducers/anecdoteReducer'
 
 const AnecdoteList = () => {
-  const anecdotes = useSelector(state => state)
+  const anecdotes = useSelector(state => state.anecdotes)
+  const filter = useSelector(state => state.filter)
   const dispatch = useDispatch()
 
   const vote = id => {
     console.log('vote', id)
-    // use action creator instead of creating action object manually
     dispatch(voteAnecdote(id))
   }
   
-  // Sort anecdotes by votes (descending - most votes first)
-  const sortedAnecdotes = [...anecdotes].sort((a, b) => b.votes - a.votes)
+  // Filter anecdotes based on filter text
+  const filteredAnecdotes = anecdotes.filter(anecdote =>
+    anecdote.content.toLowerCase().includes(filter.toLowerCase())
+  )
+  
+  // Sort filtered anecdotes by votes (descending - most votes first)
+  const sortedAnecdotes = [...filteredAnecdotes].sort((a, b) => b.votes - a.votes)
 
   return (
     <div>

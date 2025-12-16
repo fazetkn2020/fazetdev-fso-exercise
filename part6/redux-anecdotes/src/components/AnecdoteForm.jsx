@@ -9,15 +9,11 @@ const AnecdoteForm = () => {
   const handleSubmit = (event) => {
     event.preventDefault()
 
-    // check if input is not empty
     if (newAnecdote.trim() === '') {
       return
     }
 
-    // dispatch action to add new anecdote
     dispatch(createAnecdote(newAnecdote))
-
-    // clear the input field
     setNewAnecdote('')
   }
 
