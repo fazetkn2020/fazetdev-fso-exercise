@@ -17,8 +17,8 @@ const AnecdoteForm = () => {
     // Dispatch create action
     dispatch(createAnecdote(newAnecdote))
     
-    // Show notification
-    dispatch(showNotification(`New anecdote created: "${newAnecdote}"`, 5000))
+    // Show notification for 5 seconds (using seconds parameter)
+    dispatch(showNotification(`New anecdote created: "${newAnecdote}"`, 5))
     
     // Clear input field
     setNewAnecdote('')

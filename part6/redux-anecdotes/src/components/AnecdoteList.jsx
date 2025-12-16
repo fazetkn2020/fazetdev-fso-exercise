@@ -13,8 +13,8 @@ const AnecdoteList = () => {
     // Dispatch vote thunk (sends to backend)
     dispatch(voteAnecdote(anecdote))
     
-    // Show notification
-    dispatch(showNotification(`You voted for: "${anecdote.content}"`, 5000))
+    // Show notification for 5 seconds (using seconds parameter)
+    dispatch(showNotification(`You voted for: "${anecdote.content}"`, 5))
   }
   
   // Filter anecdotes based on filter text

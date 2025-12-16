@@ -15,15 +15,25 @@ const notificationSlice = createSlice({
 
 export const { setNotification, clearNotification } = notificationSlice.actions
 
-// Thunk action creator for showing notification with timeout
-export const showNotification = (message, duration = 5000) => {
+let timeoutId = null
+
+// Improved thunk action creator for showing notification
+// Takes: message (string) and time in seconds (number)
+export const showNotification = (message, seconds = 5) => {
   return async dispatch => {
+    // Clear any previous timeout to avoid overlapping notifications
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+    
+    // Set new notification
     dispatch(setNotification(message))
     
-    // Clear notification after specified duration
-    setTimeout(() => {
+    // Set timeout to clear notification (convert seconds to milliseconds)
+    timeoutId = setTimeout(() => {
       dispatch(clearNotification())
-    }, duration)
+      timeoutId = null
+    }, seconds * 1000)
   }
 }
 
