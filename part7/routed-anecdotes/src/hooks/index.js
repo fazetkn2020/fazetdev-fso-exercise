@@ -15,6 +15,12 @@ export const useField = (type) => {
     type,
     value,
     onChange,
-    reset
+    reset,
+    // Add this for easy spreading without reset
+    inputProps: {
+      type,
+      value,
+      onChange
+    }
   }
 }
