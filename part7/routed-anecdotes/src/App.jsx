@@ -96,23 +96,35 @@ const CreateNew = ({ addNew, setNotification }) => {
     navigate('/')
   }
 
+  const handleReset = () => {
+    content.reset()
+    author.reset()
+    info.reset()
+  }
+
+  // Create input props without reset function
+  const contentInput = { type: content.type, value: content.value, onChange: content.onChange }
+  const authorInput = { type: author.type, value: author.value, onChange: author.onChange }
+  const infoInput = { type: info.type, value: info.value, onChange: info.onChange }
+
   return (
     <div>
       <h2>create a new anecdote</h2>
       <form onSubmit={handleSubmit}>
         <div>
           content
-          <input {...content} />
+          <input {...contentInput} />
         </div>
         <div>
           author
-          <input {...author} />
+          <input {...authorInput} />
         </div>
         <div>
           url for more info
-          <input {...info} />
+          <input {...infoInput} />
         </div>
-        <button>create</button>
+        <button type="submit">create</button>
+        <button type="button" onClick={handleReset}>reset</button>
       </form>
     </div>
   )
